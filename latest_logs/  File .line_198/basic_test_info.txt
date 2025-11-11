@@ -1,0 +1,55 @@
+  File .py:198:SB
+--------------------------------------------------------------------
+Last Page: https://www.rew.ca/properties/areas/toronto-on/page/1
+ Duration: 13.88s
+  Browser: Chrome 141.0.7390.123
+   Driver: chromedriver 141.0.7390.122
+Timestamp: 1762411627  (Unix Timestamp)
+     Date: Thursday, November 6, 2025
+     Time: 1:47:07 AM  (Eastern Daylight Time, UTC-04:00)
+--------------------------------------------------------------------
+Traceback:
+  Traceback (most recent call last):
+  File "C:\Users\colef\AppData\Local\Temp\ipykernel_25480\392805908.py", line 9, in <module>
+    verify_success(sb)
+  File "C:\Users\colef\AppData\Local\Temp\ipykernel_25480\1659263645.py", line 4, in verify_success
+    sb.assert_element('img[alt="Logo Assembly"]', timeout=4)
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\base_case.py", line 10107, in assert_element
+    self.wait_for_element_visible(selector, by=by, timeout=timeout)
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\base_case.py", line 9354, in wait_for_element_visible
+    return page_actions.wait_for_element_visible(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\page_actions.py", line 517, in wait_for_element_visible
+    timeout_exception(NoSuchElementException, message)
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\page_actions.py", line 270, in timeout_exception
+    raise exc(msg)
+seleniumbase.common.exceptions.NoSuchElementException: Message: 
+ Element {img[alt="Logo Assembly"]} was not present after 4 seconds!
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\colef\AppData\Local\Temp\ipykernel_25480\392805908.py", line 16, in <module>
+    verify_success(sb)
+  File "C:\Users\colef\AppData\Local\Temp\ipykernel_25480\1659263645.py", line 4, in verify_success
+    sb.assert_element('img[alt="Logo Assembly"]', timeout=4)
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\base_case.py", line 10107, in assert_element
+    self.wait_for_element_visible(selector, by=by, timeout=timeout)
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\base_case.py", line 9354, in wait_for_element_visible
+    return page_actions.wait_for_element_visible(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\page_actions.py", line 517, in wait_for_element_visible
+    timeout_exception(NoSuchElementException, message)
+  File "C:\Users\colef\AppData\Local\Programs\Python\Python311\Lib\site-packages\seleniumbase\fixtures\page_actions.py", line 270, in timeout_exception
+    raise exc(msg)
+seleniumbase.common.exceptions.NoSuchElementException: Message: 
+ Element {img[alt="Logo Assembly"]} was not present after 4 seconds!
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\colef\AppData\Local\Temp\ipykernel_25480\392805908.py", line 18, in <module>
+    raise Exception("Detected!")
+Exception: Detected!

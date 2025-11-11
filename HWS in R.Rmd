@@ -1,0 +1,217 @@
+---
+output: pdf_document
+title: "Modeling Canada Housing Prices"
+author: "Cole Chisamore"
+---
+
+```{r, echo=FALSE}
+setwd("C:/Users/colef/Documents/GitHub/Housing-Web-Scraping")
+```
+
+# Introduction
+
+In this pdf, I will using R to attempt to model the response variable housing price based on multiple explanatory variables:
+
+* Bedrooms: Number of bedrooms in the property (main or otherwise)
+* Bathrooms: Number of bathrooms in the property (main or otherwise)
+* Square Feet: Rough square footage of indoor property
+* Property Type: Category assigned to each listing including...
+  - Apt/Condo
+  - Duplex
+  - Fourplex
+  - House
+  - Land/Lot
+  - Mfd/Mobile Home
+  - Multifamily
+  - Recreational
+  - Townhouse
+  - Triplex
+
+
+# Forming the Initial Model
+
+Let's use some libraries first:
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggsci)
+```
+
+Then we can import the raw scraped housing data that was collected beforehand:
+
+```{r}
+# Read in csv file as a tibble,
+houses.df <- read_csv(file = "housing_df.csv", show_col_types = FALSE)
+# remove any data with invalid values,
+houses.df <- houses.df %>%
+  drop_na()
+# get rid of duplicates (some listings appeared multiple times),
+houses.df <- houses.df %>%
+  distinct()
+# make Property Type a factor, and order it
+houses.df$`Property Type` <- factor(houses.df$`Property Type`)
+houses.df <- houses.df %>%
+  mutate(`Property Type` = fct_reorder(`Property Type`, Price, 
+                                       .fun="length", .desc = TRUE))
+```
+
+Let's see an initial naive model:
+
+```{r}
+houses.glm1 <- glm(formula = Price~Bedrooms+Bathrooms+`Square Feet`+`Property Type`,
+                   data=houses.df)
+summary(houses.glm1)
+```
+
+Remarks on initial model:
+
+* the Bedrooms variable is oddly assigned a negative (and significant) correlation with Price, which is counter-intuitive
+* multiple Property Type categories are deemed to have insignificant difference from "House"
+
+
+
+
+
+\newpage
+
+# Refining the Dataframe
+
+Before creating another model, I will be going through each variable (response or explanatory) to refine our dataframe. This includes graphing their distributions and inspecting specific qualities to remove outlying/incorrect data and develop an deeper understanding about our dataset.
+
+## Checking Price
+
+Let's check the distribution of house listing prices, to see if we can remove any outliers.
+
+```{r, fig.width=6, fig.height=3, warning=FALSE}
+#' Creates quantiles of middle 99% range of data and distribution plot
+#' 
+#' @param df A Dataframe
+#' @param column A string representing a column name
+#' @param datatype A string denoting plot type
+#' @return list of quantile values
+#' @return distribution plot
+distribution_graph <- function(df, column, datatype="bar") {
+  q <- quantile(df[[column]], probs=c(0,0.005,0.995,1))
+  y <- if(datatype=="density"){geom_density()}else{geom_bar()}
+  p <- ggplot(data=df, aes(x=.data[[column]])) + y +
+    ggtitle(paste("Distribution of", column)) +
+    geom_vline(xintercept=q[c(2,3)], linetype="dashed", color="red") + 
+    geom_vline(xintercept=q[c(1,4)], linetype="dashed", color="blue")
+  return(list(quantiles=q,plot=p))
+}
+distribution_graph(houses.df, "Price","density")
+```
+
+This distribution is a little loo skewed by some extremely expensive house listings. Since 99% of the price values lie within the prices of $80,000 to $5,000,000, let's remove the values which go beyond this range to make the graph more normally distributed.
+
+\newpage 
+
+```{r, fig.width=6, fig.height=2.8, warning=FALSE}
+# filter out outlying prices and redo plotting:
+houses.df <- houses.df %>%
+  filter(Price <= 5000000) %>%
+  filter(Price >= 80000)
+price.plot <- distribution_graph(houses.df, "Price","density")
+price.plot$quantiles
+price.plot$plot
+```
+
+This distribution is now a lot more normal for our model to handle. However the right-skewedness suggests that a gamma distribution would be more fit to model Price. Using a gamma shape of 4 seems to generally fit our model, and ensures that Price remains positive:
+
+```{r, fig.width=6, fig.height=2.8, warning=FALSE}
+price.plot$plot + 
+  stat_function(fun=dgamma, args=list(shape=4,scale=180000), 
+                color="green", show.legend = TRUE)
+```
+
+\newpage
+
+## Checking Square Feet
+
+Let's continue by checking the distribution of house square footage.
+```{r, fig.width=6, fig.height=2, warning=FALSE}
+distribution_graph(houses.df, "Square Feet","density")
+```
+
+Since this distribution already seems relatively normal, I will only remove listings above 10,000 square feet.
+
+```{r, fig.width=6, fig.height=2, warning=FALSE}
+# filter out outlying Square Feet and redo plotting:
+houses.df <- houses.df %>%
+  filter(`Square Feet` <= 10000)
+distribution_graph(houses.df, "Square Feet","density")
+```
+
+\newpage
+
+## Checking Bathrooms
+
+Now moving onto bathrooms, which seem normal already:
+```{r, fig.width=6, fig.height=2, warning=FALSE}
+distribution_graph(houses.df, "Bathrooms")
+```
+
+
+## Checking Bedrooms
+
+Finally bedrooms, which also seems normal already:
+```{r, fig.width=6, fig.height=2, warning=FALSE}
+distribution_graph(houses.df, "Bedrooms")
+```
+
+\newpage
+
+## Checking Property Type
+
+Now let's look at the distributions of the categorical variable property types:
+```{r}
+houses.df %>%
+  group_by(`Property Type`) %>%
+  summarise(count=n())
+ggplot(data=houses.df[houses.df$Price<=3000000,], 
+       aes(x=Price, fill=`Property Type`, color=`Property Type`)) +
+  geom_density(linewidth=1,alpha=0.1) + ggtitle("Price Boxplot for Each Property Type") +
+  theme(legend.position="inside", legend.position.inside = c(0.8, 0.6)) +
+  scale_color_d3() + scale_fill_d3()
+```
+*Note: x-axis has been shrunk to make distributions clearer
+
+\newpage 
+
+Due to small sizes of some categories, I will be merging some categories into one based on similar distribution/property type. First I will merge "Multifamily", "Triplex", and "Fourplex", since each has a wider further-right distribution, and are all properties with multiple living units. Since "Recreational" and "Land/Lot" both have so few occurences combined with unique distribution and property type, I will be removing these listings from our dataset:
+
+```{r}
+# multi-family merging
+houses.df[houses.df$`Property Type` %in% 
+            c("Triplex","Fourplex"),]$`Property Type` <- 
+  "Multifamily"
+
+# removing categories
+houses.df <- houses.df %>%
+  filter(!(`Property Type` %in% c("Land/Lot","Recreational")))
+```
+
+Now let's recheck the distributions:
+```{r}
+ggplot(data=houses.df[houses.df$Price<=3000000,], 
+       aes(x=Price, fill=`Property Type`, color=`Property Type`)) +
+  geom_density(linewidth=1,alpha=0.1) + ggtitle("Price Boxplot for Each Property Type") +
+  theme(legend.position="inside", legend.position.inside = c(0.8, 0.6)) +
+  scale_color_d3() + scale_fill_d3()
+```
+
+\newpage
+
+# Remodeling
+
+After filtering our dataset and implementing changes to the naive model we arrive at a our new and improved model:
+
+```{r}
+houses.glm2 <- glm(formula = Price~Bedrooms+Bathrooms+`Square Feet`+`Property Type`, 
+                   data=houses.df, family = Gamma(link="log"))
+summary(houses.glm2)
+```
+
+
+
+
