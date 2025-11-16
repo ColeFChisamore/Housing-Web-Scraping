@@ -116,13 +116,7 @@ price.plot$quantiles
 price.plot$plot
 ```
 
-This distribution is now a lot more normal for our model to handle. However the right-skewedness suggests that a gamma distribution would be more fit to model Price. Using a gamma shape of 4 seems to generally fit our model, and ensures that Price remains positive:
-
-```{r, fig.width=6, fig.height=2.8, warning=FALSE}
-price.plot$plot + 
-  stat_function(fun=dgamma, args=list(shape=4,scale=180000), 
-                color="green", show.legend = TRUE)
-```
+This distribution is now a lot more normal for our model to handle. However the right-skewedness suggests that a transformation on Price would be beneficial to our model.
 
 \newpage
 

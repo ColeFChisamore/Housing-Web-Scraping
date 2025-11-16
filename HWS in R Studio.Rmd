@@ -1,0 +1,312 @@
+---
+title: "HWS in R Studio"
+author: "Cole Chisamore"
+date: "2025-11-11"
+output: 
+  pdf_document:
+     number_sections: true
+     toc: true
+---
+```{r, echo=FALSE}
+setwd("C:/Users/colef/Documents/GitHub/Housing-Web-Scraping")
+set.seed(4)
+```
+
+# Introduction
+
+In this pdf, I will using R to attempt to model the response variable housing price based on multiple explanatory variables:
+
+* Bedrooms: Number of bedrooms in the property (main or otherwise)
+* Bathrooms: Number of bathrooms in the property (main or otherwise)
+* Square Feet: Rough square footage of indoor property
+* Property Type: Category assigned to each listing including...
+  - Apt/Condo
+  - Duplex
+  - Fourplex
+  - House
+  - Land/Lot
+  - Mfd/Mobile Home
+  - Multifamily
+  - Recreational
+  - Townhouse
+  - Triplex
+
+\newpage
+
+# Forming the Initial Model
+
+I will begin with a naive model after reading in the scraped data. However I will first remove duplicates and invalid responses, and factorize Property Type. The model will be a basic generalized linear model correlating Price with each explanatory variable.
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(forcats)
+library(car)
+library(rstatix)
+## Polishing and Sampling dataframe:
+houses.df <- read_csv(file = "housing_df.csv", show_col_types = FALSE)
+houses.df <- houses.df %>% drop_na() %>% distinct()
+houses.df$`Property Type` <- factor(houses.df$`Property Type`)
+houses.df <- houses.df %>% mutate(`Property Type` = fct_reorder(
+  `Property Type`, Price, .fun="length", .desc = TRUE))
+houses.df <- houses.df %>% rename(PropertyType = `Property Type`)
+houses.df <- houses.df %>% rename(SquareFeet = `Square Feet`)
+## Creating first model:
+houses.glm1 <- glm(formula = Price~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+                   data=houses.df)
+#' Prints a concise summary of model
+#'
+#' @param model A linear model
+#' @param name String
+my_summary <- function(model, name="Unnamed Model"){
+  cat("\"",name,"\"\n")
+  cat("Formula: ",as.character(model$formula)[c(2,1,3)],"\n \n")
+  printCoefmat(summary(model)$coefficients)
+  cat(paste("\nAIC:", model$aic))}
+my_summary(houses.glm1, "Naive Model")
+```
+
+\newpage
+
+Before analyzing, let's also check the error of the model and create a qqplot of residuals for trained model:
+
+```{r, fig.width=6, fig.height=4}
+#' Calculates percent error between predictions and actual values
+#' 
+#' @param preds predicted values
+#' @param reals actual values
+error <- function(preds, reals){
+  return(mean(abs(preds - reals) / reals))
+}
+pred <- predict(houses.glm1, houses.df)
+error(pred, houses.df$Price)
+
+houses.glm1.res <- rstandard(houses.glm1)
+qqnorm(houses.glm1.res)
+qqline(houses.glm1.res)
+```
+
+## Initial Model Remarks 
+
+* A percent error of ~53% is not great, so hopefully I can create a better model later on
+* The Q-Q plot shows heavy tails off of the normal line, especially on the right
+  * This implies that the 'Price' variable is not normally distributed enough with many outliers (especially high outliers)
+  * Perhaps removing these outliers and/or transforming Price could help
+* the Bedrooms variable is oddly assigned a negative (and significant) correlation with Price, which is counter-intuitive since more bedrooms would seem to imply high cost
+* multiple Property Type categories are deemed to have insignificant difference from "House", perhaps I can reduce the number of categories or fix them some other way
+
+\newpage
+
+# Augmenting the Variables
+
+In this section I will begin augmenting the variables of my dataframe through transformation or dataframe manipulation in order to better fit the assumptions of the generalized linear model.
+
+## Price
+
+### Investigating the Variable
+
+Since Price is the response variable of our model, it will be the most important one to have normally distributed for my glm. Let's begin by creating a density plot to see the current distribution:
+
+```{r, fig.width=6, fig.height=3}
+#' Creates a distribution plot object with relative normal distribution
+#' 
+#' @param df A Dataframe
+#' @param column A string representing a column name
+#' @param datatype A string denoting plot type
+#' @return distribution plot
+distribution_graph <- function(df, column, datatype="bar") {
+  y <- if(datatype=="density"){
+    geom_density(aes(colour=paste(column,"Distribution")))
+    } else {geom_bar(aes(colour=paste(column,"Distribution")))}
+  p <- ggplot(data=df, aes(x=.data[[column]])) + 
+    ggtitle(paste("Distribution of", column)) + y +
+    stat_function(fun=dnorm, aes(colour = "Relative Normal Distribution"),
+                  args=list(mean=mean(df[[column]]), sd=sd(df[[column]]))) +
+    scale_colour_manual("Legend title", values = c("blue", "red")) +
+    theme(legend.position="inside", legend.position.inside = c(0.8, 0.6))
+  return(p)
+}
+# Create the plot
+distribution_graph(houses.df, "Price", datatype="density")
+```
+
+As was already seen in the naive model's Q-Q plot, the distribution of prices in our dataset is not very normal. There is a very heavy right-sided tail which makes this density curve much thinner than the relative normal curve that it should be. However, this should be easily fixed by a simple log transformation on Price:
+
+\newpage
+
+### Assessing Changes
+
+```{r, fig.width=6, fig.height=2.3}
+## Create new "log(Price)" column for dataset and replot:
+houses.df$logPrice <- log(houses.df$Price)
+distribution_graph(houses.df, "logPrice", datatype="density")
+```
+
+This log transformation of Price seems to fit the normality assumption significantly better than before, so it will be used in place of Price. I will also remove all listings with extreme logPrice to cut down on tails.
+
+### Testing New Model
+
+Let's recreate the model with my change and compare with the previous model.
+
+```{r}
+# Removing outlying logPrices, and making second model:
+q99 <- quantile(houses.df$logPrice, probs=c(0.005,0.995))
+houses.df <- houses.df %>% filter(logPrice > q99[1]) %>% filter(logPrice < q99[2])
+houses.glm2 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+                   data=houses.df)
+my_summary(houses.glm2, "Model 2")
+```
+
+```{r, fig.width=6, fig.height=4}
+pred <- exp(predict(houses.glm2, houses.df))
+error(pred, houses.df$Price)
+
+houses.glm2.res <- rstandard(houses.glm2)
+qqnorm(houses.glm2.res)
+qqline(houses.glm2.res)
+```
+
+### Remarks {-}
+
+* A percent error of ~49% is already a great improvement on the previous model
+* The AIC score decreased drastically. However this is mostly due to the 'logPrice' variable being magnitudes smaller than the 'Price' variable, so no remarks can be made on AIC yet.
+* The Q-Q plot still has noticeable  tails curving away from the normal line
+  * The right tail is much less heavy than before, an acceptable distance from the normal line
+  * The left tail is about the same, with a few points straying quite further away
+  * Overall the points are much straighter and close to the normal line
+* Bedrooms now is being considered to have significant positive correlation, which is more reasonable
+* Most Property Types still are considered insignificant
+
+Overall, the model has improved in many ways and logPrice will be used in all future models.
+
+
+
+\newpage
+
+## Property Type
+
+### Investigating the Variable
+
+Let's check the various property types and their distributions so we can see which ones are similar enough to be grouped, or scarce enough to be removed.
+```{r, fig.width=6, fig.height=3.3}
+houses.df %>% group_by(PropertyType) %>% summarise(count=n())
+ggplot(data=houses.df, aes(x=logPrice, color=PropertyType)) +
+  geom_boxplot() + ggtitle("Boxplot Distribution for Each Property Type")
+```
+
+Firstly the 'Land/Lot' and 'Recreational' categories are very scarce. Since 'Land/Lot' isn't really a kind of housing, I will simply remove any of these listings. 'Recreational' is also an odd type of housing and it has no similar categories, so it too will be removed.
+
+Secondly since Triplex, Fourplex, and Multifamily are all on the higher end of the plot and are similar categories anyways, I will consider combining them (and perhaps other categories) after performing an ANOVA and a Tukey HCD test.
+
+\newpage
+
+
+
+```{r}
+# removing 'Land/Lot' and 'Recreational' listings
+houses.df <- houses.df %>%
+  filter(!(PropertyType %in% c("Land/Lot","Recreational")))
+houses.df$PropertyType <- droplevels(houses.df$PropertyType)
+```
+
+```{r}
+## ANOVA test
+anova_model <- aov(logPrice ~ PropertyType, data = houses.df)
+summary(anova_model)
+```
+Clearly there is significant difference between categories, but it was good to check anyway.
+```{r, fig.width=6, fig.height=4}
+## Tukey HCD test
+tukey_results <- TukeyHSD(anova_model,conf.level = 0.95)
+par(mar=c(3,8,3,3))
+plot(tukey_results, las=1, cex.axis = 0.6)
+```
+
+Looking at which categories are/aren't significantly different in their mean, I can make some remarks:
+
+* Triplex, Fourplex, and Multifamily are all considered to not have significantly different means as expected.
+* However Duplex is also considered to not have significantly different mean than these categories
+* House is similar to Duplex in this regard, but IS significantly different from Multifamily
+* House and Duplex both have similar distributions, and their means aren't significantly different
+
+\newpage
+
+### Making & Assessing Changes
+
+Since Triplex, Fourplex, and Multifamily are so similar, I will try combining them into one category. Then I will re-plot and assess the changes.
+
+```{r}
+# Merging categories
+houses.df$PropertyType <- 
+  fct_collapse(houses.df$PropertyType, 
+               `Tri/Four/Multi` = c("Triplex","Fourplex","Multifamily"))
+## Tukey HCD test
+anova_model <- aov(logPrice ~ PropertyType, data = houses.df)
+tukey_results <- TukeyHSD(anova_model,conf.level = 0.95)
+par(mar=c(3,8,3,3))
+plot(tukey_results, las=1, cex.axis = 0.6)
+```
+
+It seems that the new category 'Tri/Four/Multi' has a mean significantly different from that of 'Duplex', so I will not be merging these categories. However the 'Duplex' and 'House' categories are still similar in mean (and distribution), so I will create two models: one with 'House' and 'Duplex' as separate categories, and one with them merged. Afterwards I will compare models and pick the one I find most suitable.
+
+\newpage
+
+### Testing New Models
+
+Let's recreate the model with my change and compare with the previous model.
+
+```{r}
+# Making model with House and Duplex separate
+houses.glm3.1 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+                     data=houses.df)
+# Making model with House and Duplex merged
+houses.df.2 <- houses.df
+houses.df.2$PropertyType <- 
+  fct_collapse(houses.df.2$PropertyType, 
+               `House/Duplex` = c("House","Duplex"))
+houses.glm3.2 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+                     data=houses.df.2)
+my_summary(houses.glm3.1, "Separate House/Duplex")
+my_summary(houses.glm3.2, "Merged House/Duplex")
+```
+
+\newpage
+
+```{r, fig.width=6, fig.height=2.5}
+pred.1 <- exp(predict(houses.glm3.1, houses.df))
+error(pred.1, houses.df$Price)
+pred.2 <- exp(predict(houses.glm3.2, houses.df.2))
+error(pred.2, houses.df$Price)
+
+
+par(mar=c(2,2,1,1), mfrow = c(1, 2))
+houses.glm3.1.res <- rstandard(houses.glm3.1)
+qqnorm(houses.glm3.1.res, ylab = "", xlab = "", main="Separate Q-Q Plot")
+qqline(houses.glm3.1.res)
+
+houses.glm3.2.res <- rstandard(houses.glm3.1)
+qqnorm(houses.glm3.2.res, ylab = "", xlab = "", main="Merged Q-Q Plot")
+qqline(houses.glm3.2.res)
+```
+
+### Remarks {-}
+
+* The AIC of both models is an improvement over the previous model
+  * This implies that the removal and Tri/Four/Multi merging did in fact remove unnecessary variables
+  * The AIC of the separate model is lower than the merged model, implying that merging is bad
+* The Q-Q plots seem to be the exact same, and no different from the previous model's
+  * This means the change didn't effect the normality of the errors
+* The percent error of both models is very similar to the previous model (~49%)
+  * The separate model actually slightly improves (by about 0.03%)
+  * The merged model is slightly worse (by about 0.01%)
+
+From these observations, it is clear that the separate model is better, and will become the newest model. I will note that there still exists a insignificancy problem with the 'Tri/Four/Multi' category, but I feel there are too many existing observations to simply remove this category from the dataset.
+
+```{r}
+# Choosing official 3rd model
+houses.glm3 <- houses.glm3.1
+```
+
+\newpage
+
+## Numerical Explanatory Variables
+
