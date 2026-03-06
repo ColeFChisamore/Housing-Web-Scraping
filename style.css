@@ -1,0 +1,189 @@
+
+/* Importing a font from google */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap');
+
+:root{
+    --color1:rgb(255, 255, 122);
+    --color2:rgb(255, 210, 125);
+}
+
+body{
+    background-color:white;
+    color:black;
+    font-family:"Space Grotesk", sans-serif;
+    margin:0%;
+    padding:0px 0px 0px;
+}
+
+/* 
+Header 
+*/
+header{
+    background-color: var(--color2);
+    position:sticky;
+    top:0;
+    width:100%;
+}
+/* Logo
+- Keep logo to the left of the Header
+*/
+.logo{
+    float:left;
+    padding:10px;
+}
+/* Heading
+- Slightly larger font
+*/
+.heading{
+    font-size:48px;
+}
+/* Subheading
+- Slightly smaller font
+*/
+.subheading{
+    font-size:20px;
+}
+/* Both Heading and Subheading
+- center aligned
+*/
+.heading, .subheading{
+    text-align:center;
+}
+
+
+/* Navigation Bar */
+header nav{
+    margin:0;
+    clear:both;
+}
+
+/* Navigation Bar List */
+header nav ul{
+    list-style:none;
+    padding:0;
+    margin:0;
+    position:relative;
+    float:left;
+    width:100%;
+    background-color: var(--color2);
+}
+/* Navigation Bar List Items*/
+header nav ul li{
+    display:inline-block;
+    background-color: var(--color1);
+    width:31%;
+    margin:1%;
+}
+/* Navigation Bar Links
+- display as a block
+- pad left and right by 10px
+- increase width between lines to 40px (250% of 16px)
+- remove underlines from links
+*/
+header nav a{
+    display:block;
+    padding: 0px 10px;
+    font-size:16px;
+    line-height:250%;
+    text-decoration:none;
+    color:black;
+}
+/* Navigation Bar Links and Menu when hovered
+- changes colours
+*/
+header nav a:hover, header nav .menu:hover{
+    background-color:brown;
+    color:white;
+}
+/* Menu 
+- only shows up on small window
+*/
+.menu{
+    display:none;
+}
+
+
+/* Main Content class */
+.main{
+    clear:both;
+    background-color: white;
+}
+
+.main img{
+    float:left;
+    padding:10px;
+}
+
+/* Main Articles
+- pad around by 10px
+- add border on bottom
+- prevent overflow between articles
+*/
+.main article{
+    padding:10px;
+    border-bottom:1px solid black;
+    overflow:hidden;
+}
+.main article p::first-letter{
+    font-size:200%;
+    color:darkred;
+}
+.main article div{
+    font-size:200%;
+
+}
+
+
+.footer{
+    height:200px;
+    background-color: var(--color2);
+    text-align:center;
+}
+.footer div{
+    float:left;
+}
+/* Footer Paragraphs
+- centers items vertically
+*/
+.footer p{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.col1,.col3{
+    width:30%;
+}
+.col2{
+    width:40%;
+}
+.hide{
+    display:block;
+}
+
+.footer .icon{
+    width:20px;
+    height:20px;
+    padding:10px;
+}
+
+/* 
+Changes are made when the width of the page is less than 740px 
+*/
+@media all and (max-width:740px){
+    /* Body changes colour */
+    body{background-color: red;}
+    /* Navigation list items change orientation and center*/
+    header nav ul li{display:block;text-align:center;width:98%;}
+    /* Menu 
+    - aligns and displays 
+    */
+    .menu{
+        width:100%;
+        background-color:var(--color1);
+        display:block;
+        text-align:center;
+    }
+    .hide{
+        display:none;
+    }
+}
