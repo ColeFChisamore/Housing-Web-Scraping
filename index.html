@@ -23,7 +23,209 @@
             </nav>
         </header>
         <div class="main">
-            Content
+            <!-- Step 1 -->
+            <div class="step">
+            <div class="name">Step 1: Importing Helpful Libraries</div>
+                <div class="explain">
+                    Before I start writing any code, I need to consider the different Python libraries and tools that I may require to complete this project. First of all I will need a tool that can scrape webpages for their HTML information, and since this is a big project, I would also like a tool to open new webpages automatically in separate tabs. Once I scrape all of the webpages I'll have a whole mess of HTML to work with, so it would be best to find a tool to look through this automatically. Finally, I will need somewhere to store and clean all of this data for later analysis. The following libraries and tools should fix all of these problems respectively:
+                    <ul>
+                        <li>BeautifulSoup: A tool for scraping HTML from webpages, returning any section I specify</li>
+                        <li>Selenium Webdriver: A tool that can open, close, and navigate webpages quickly and efficiently</li>
+                        <li>re (Regex): Expressions used to find certain patterns in text that I define</li>
+                        <li>Pandas: A database tool that can store, manipulate, and export any data that I obtain</li>
+                    </ul>
+                </div>
+            <div class="notebook-container">
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [1]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>from bs4 import BeautifulSoup
+from selenium import webdriver
+import re
+import pandas as pd
+</pre></div>
+            </div>
+            </div>
+            </div>
+        </div>
+        <!-- End of Step 1 -->
+
+        <!-- Step 2 -->
+        <div class="step">
+            <div class="name">Step 2: Preparing For My Scraping Function</div>
+            <div class="explain">
+                To start scraping the webpages, I need to write the function that can automate the entire process for me. But before I do that, I need to set up by creating some important variables and writing some helper functions that will make creating the function a lot more streamlined.
+            </div>
+            <div class="subname">Step 2.1: Setting Up City Lists</div>
+            <div class="explain">
+                First I'm going to create a few lists that contain the locations of where I will be scraping house listing data from. A list will be created for each province (Ontario, British Columbia, Alberta, Saskatchewan, Manitoba, & New Brunswick), where it contains  the name of the province followed by a list of various cities that I will go through. The cities are formatted as "city-pr" since the webpage links are formatted this way.
+                <ul></ul>
+            </div>
+            <div class="notebook-container">
+                <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [15]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>ON_Cities = ['Ontario', 'toronto-on', 'kitchener-on', 'waterloo-on', 'london-on', 'ottawa-on', 'guelph-on', 'hamilton-on']
+BC_Cities = ['British Columbia', 'vancouver-bc', 'victoria-bc', 'nanaimo-bc', 'surrey-bc', 'burnaby-bc', 'coquitlam-bc', 'richmond-bc']
+AB_Cities = ['Alberta', 'calgary-ab', 'edmonton-ab', 'lethbridge-ab', 'red-deer-ab', 'airdrie-ab', 'medicine-hat-ab', 'st-albert-ab']
+SK_Cities = ['Saskatchewan', 'regina-sk', 'saskatoon-sk', 'prince-albert-sk', 'moose-jaw-sk']
+MB_Cities = ['Manitoba', 'winnipeg-mb', 'brandon-mb', 'steinbach-mb']
+NB_Cities = ['New Brunswick', 'fredericton-nb', 'moncton-nb', 'saint-john-nb', 'dieppe-nb']</pre></div>
+            </div>
+        </div>
+            </div>
+            <div class="subname">Step 2.2: Writing Regex Patterns</div>
+            <div class="explain"> 
+                Next I have to set up the Regex patterns that I will be looking for within the HTML strings that I scrape. Since the string has lots of unimportant characters, I need to create a unique pattern for each piece of information that I want to look for. To determine these patterns, I scraped a single webpage to find the default structure of the HTML strings that I would be obtaining. Within that string, I manually found each piece of information and then created a pattern that would only match that exact piece of information. This could raise problems if the website had wildly inconsistent HTML structure, fortunately this was not an issue. Here's what I came up with:
+                <ul></ul>
+            </div>
+            <div class="notebook-container">
+            <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [3]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>## Patterns that we are looking for
+# pattern for price
+pricePat = r'\$[0-9,]+&lt;'
+# pattern for bedrooms
+bedPat = r'&gt;[0-9 \+]+ bd&lt;/li'
+# pattern for bathrooms
+bathPat = r'&gt;[0-9 \+]+ ba&lt;/li'
+# pattern for square feet
+sqftPat = r'[0-9][0-9 -]+ sf&lt;/li'
+# pattern for property type
+ptPat = r'(?!.*wrap"&gt;).*?&lt;/div&gt;&lt;/section&gt;'
+</pre></div>
+            </div>
+        </div>
+        </div>
+        <div class="subname">Step 2.3: Creating Helper Functions</div>
+        <div class="explain">
+            Before moving on to the scraping function, there's one last thing to do: write some helper functions! Even after scraping the webpage for HTML and matching regex patterns to get the correct pieces of information, there is still some tweaking that needs to be done to make sure the data is consistent and formatted. Price is written as a string with commas to separate thousands, but since I want to store it as a number I will need a function to fix this. Bedroom and bathroom numbers can sometimes be written in the format "x+y" where "x" represents main bedrooms/bathrooms and "y" represents partial ones. It would make it a lot easier to simply add these values together to make sure bedroom and bathroom counts are consistently represented as a single integer. Finally the square footage can sometimes be written as a range, and other times as just one value (the maximum). To keep consistent, any range is simply turned into its max value. Here are the functions I created to solve these problems:
+            <ul></ul>
+        </div>
+        <div class="notebook-container">
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [4]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>
+## Helpful function for turning price strings into integers
+def priceRead(prc):
+    prc = prc.replace(',', '')
+    return int(prc)
+
+## Helpful function for turning bed/bath strings into integers
+def bedRead(bd):
+    if '+' in bd:
+        # remove spaces
+        bd = bd.replace(' ', '')
+        # return sum of numbers
+        bd = bd.split('+')
+        return int(bd[0]) + int(bd[1])
+    else:
+        return int(bd)
+
+## Helpful function for turning sqft strings into values
+def sqftRead(sq):
+    if '-' in sq:
+        # remove spaces
+        sq = sq.replace(' ', '')
+        # return max of numbers
+        sq = sq.split('-')
+        return int(sq[1])
+    else:
+        return int(sq)
+</pre></div>
+            </div>
+        </div>
+        </div>
+        </div>
+        <!-- End of Step 2 -->
+
+        <!-- Step 3 -->
+        <div class="step">
+            <div class="name">Step 3: Writing the Scraping Function</div>
+            <div class="explain">
+                idk yet
+                <ul></ul>
+            </div>
+            <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [5]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>
+## Initiate houses list
+houses = []
+
+def CityListScraper(cityList):
+    dr = webdriver.Chrome()
+    baseURL = 'https://www.rew.ca/properties/areas/'
+    prevLen = 0
+    houses = []
+    
+    for city in cityList[1:]:
+        print("Scraping", city, "...")
+        pageNum = 1
+        while (True):
+            # get new URL
+            url = baseURL + city + '/page/' + str(pageNum)
+            
+            # and scrape it to turn it into a helpful list
+            dr.get(url)
+            soup = BeautifulSoup(dr.page_source, "html.parser")
+            houseList = soup.find_all('div', {'class':'displaycard-body'})
+            
+            # check if we have gone past last page
+            if soup.find('div', {'class':'pageblock-cta_wrapper'}):
+                break
+        
+            # go through each house in the list
+            for index, house in enumerate(houseList):
+                house = str(house)
+                price = re.search(pricePat, house)
+                if price:
+                    price = priceRead(price.group()[1:-1])
+                bed = re.search(bedPat, house)
+                if bed:
+                    bed = bedRead(bed.group()[1:-7])
+                bath = re.search(bathPat, house)
+                if bath:
+                    bath = bedRead(bath.group()[1:-7])
+                sqft = re.search(sqftPat, house)
+                if sqft:
+                    sqft = sqftRead(sqft.group()[0:-7])
+                prop = re.search(ptPat, house)
+                if prop:
+                    prop = prop.group()[5:-16]
+                data = {
+                    "Province": cityList[0],
+                    "City": city,
+                    "Price": price,
+                    "Bedrooms": bed,
+                    "Bathrooms": bath,
+                    "Square Feet": sqft,
+                    "Property Type": prop
+                }
+                if sqft == 0:
+                    print(house,'\n')
+                houses.append(data)
+            
+            # only proceed to next page if current page was properly scraped
+            if len(houses) &gt; prevLen:
+                print("      Scraped page", pageNum, "| total listings:", len(houses))
+                #print(houses)
+                pageNum += 1
+                prevLen = len(houses)
+        
+
+    # After everything, return the list
+    return houses</pre></div>
+            </div>
+        </div>
+
+
+        </div>
+
+
+            End
         </div>
         <footer class="footer">
             <div class="col1">

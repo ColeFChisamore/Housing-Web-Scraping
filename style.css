@@ -5,6 +5,17 @@
 :root{
     --color1:rgb(255, 255, 122);
     --color2:rgb(255, 210, 125);
+    --jp-code-font-family: 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+    --jp-content-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --jp-cell-prompt-width: 64px;
+    --jp-input-prompt-color: #307fc1;
+    --jp-output-prompt-color: #bf5b3d;
+    --jp-cell-input-bg: #f7f7f7;
+    --jp-layout-color0: #ffffff;
+    --jp-layout-color1: #f7f7f7;
+    --jp-border-color1: #e0e0e0;
+    --jp-content-font-color0: #000000;
+    --jp-content-font-color1: #333333;
 }
 
 body{
@@ -103,10 +114,15 @@ header nav a:hover, header nav .menu:hover{
 }
 
 
+
+
+
+
 /* Main Content class */
 .main{
     clear:both;
     background-color: white;
+    padding:0%;
 }
 
 .main img{
@@ -119,19 +135,96 @@ header nav a:hover, header nav .menu:hover{
 - add border on bottom
 - prevent overflow between articles
 */
-.main article{
-    padding:10px;
-    border-bottom:1px solid black;
-    overflow:hidden;
+.main .step{
+    border-bottom:black solid 1px;
+    padding:5% 5% 5%;
 }
-.main article p::first-letter{
-    font-size:200%;
-    color:darkred;
+.main .name{
+    font-size:175%;
+    font-weight: bold;
 }
-.main article div{
-    font-size:200%;
+.main .subname{
+    padding:2% 0% 0%;
+    font-size:130%;
+    font-weight: bold;
+}
+.main .explain{
+    padding:10px 0px 0px;
+}
+.main .explain ul{
+    padding:0px 5%;
+}
+.main .explain ul li::marker{
+    font-size:0.8em;
+}
 
+
+
+
+/* Notebook Styling */
+.notebook-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 10px;
+    border:lightgray
+     solid 1px;
 }
+/* Cell structure */
+.cell {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 0px;
+}
+.cell-prompt {
+    min-width: var(--jp-cell-prompt-width);
+    width: var(--jp-cell-prompt-width);
+    font-family: var(--jp-code-font-family);
+    font-size: 12px;
+    padding: 10px 8px 10px 0;
+    text-align: right;
+    flex-shrink: 0;
+    user-select: none;
+}
+.cell-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+/* Input prompt styling - Jupyter blue */
+.input-prompt {
+    color: var(--jp-input-prompt-color);
+    font-weight: bold;
+}
+/* Code cell input area */
+.input-area {
+    background-color: var(--jp-cell-input-bg);
+    border: 1px solid var(--jp-border-color1);
+    border-radius: 2px;
+    padding: 8px 12px;
+    overflow-x: auto;
+}
+.input-area pre {
+    margin: 0;
+    font-family: var(--jp-code-font-family);
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 .footer{
@@ -187,3 +280,15 @@ Changes are made when the width of the page is less than 740px
         display:none;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
