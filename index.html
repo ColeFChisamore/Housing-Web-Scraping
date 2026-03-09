@@ -26,6 +26,8 @@
             <!-- Step 1 -->
             <div class="step">
             <div class="name">Step 1: Importing Helpful Libraries</div>
+            <div class="section">
+            <div class="text">
                 <div class="explain">
                     Before I start writing any code, I need to consider the different Python libraries and tools that I may require to complete this project. First of all I will need a tool that can scrape webpages for their HTML information, and since this is a big project, I would also like a tool to open new webpages automatically in separate tabs. Once I scrape all of the webpages I'll have a whole mess of HTML to work with, so it would be best to find a tool to look through this automatically. Finally, I will need somewhere to store and clean all of this data for later analysis. The following libraries and tools should fix all of these problems respectively:
                     <ul>
@@ -34,6 +36,7 @@
                         <li>re (Regex): Expressions used to find certain patterns in text that I define</li>
                         <li>Pandas: A database tool that can store, manipulate, and export any data that I obtain</li>
                     </ul>
+                </div>
                 </div>
             <div class="notebook-container">
         <div class="cell cell-code">
@@ -47,23 +50,30 @@ import pandas as pd
             </div>
             </div>
             </div>
+            </div>
+            
         </div>
         <!-- End of Step 1 -->
 
         <!-- Step 2 -->
         <div class="step">
+            
+            
             <div class="name">Step 2: Preparing For My Scraping Function</div>
             <div class="explain">
                 To start scraping the webpages, I need to write the function that can automate the entire process for me. But before I do that, I need to set up by creating some important variables and writing some helper functions that will make creating the function a lot more streamlined.
             </div>
+            <div class="section">
+            <div class="text">
             <div class="subname">Step 2.1: Setting Up City Lists</div>
             <div class="explain">
                 First I'm going to create a few lists that contain the locations of where I will be scraping house listing data from. A list will be created for each province (Ontario, British Columbia, Alberta, Saskatchewan, Manitoba, & New Brunswick), where it contains  the name of the province followed by a list of various cities that I will go through. The cities are formatted as "city-pr" since the webpage links are formatted this way.
                 <ul></ul>
             </div>
+            </div>
             <div class="notebook-container">
                 <div class="cell cell-code">
-            <div class="cell-prompt input-prompt">In [15]:</div>
+            <div class="cell-prompt input-prompt">In [2]:</div>
             <div class="cell-content">
                 <div class="input-area"><pre>ON_Cities = ['Ontario', 'toronto-on', 'kitchener-on', 'waterloo-on', 'london-on', 'ottawa-on', 'guelph-on', 'hamilton-on']
 BC_Cities = ['British Columbia', 'vancouver-bc', 'victoria-bc', 'nanaimo-bc', 'surrey-bc', 'burnaby-bc', 'coquitlam-bc', 'richmond-bc']
@@ -74,10 +84,14 @@ NB_Cities = ['New Brunswick', 'fredericton-nb', 'moncton-nb', 'saint-john-nb', '
             </div>
         </div>
             </div>
+            </div>
+            <div class="section">
+            <div class="text">
             <div class="subname">Step 2.2: Writing Regex Patterns</div>
             <div class="explain"> 
                 Next I have to set up the Regex patterns that I will be looking for within the HTML strings that I scrape. Since the string has lots of unimportant characters, I need to create a unique pattern for each piece of information that I want to look for. To determine these patterns, I scraped a single webpage to find the default structure of the HTML strings that I would be obtaining. Within that string, I manually found each piece of information and then created a pattern that would only match that exact piece of information. This could raise problems if the website had wildly inconsistent HTML structure, fortunately this was not an issue. Here's what I came up with:
                 <ul></ul>
+            </div>
             </div>
             <div class="notebook-container">
             <div class="cell cell-code">
@@ -98,10 +112,14 @@ ptPat = r'(?!.*wrap"&gt;).*?&lt;/div&gt;&lt;/section&gt;'
             </div>
         </div>
         </div>
+        </div>
+        <div class="section">
+        <div class="text">
         <div class="subname">Step 2.3: Creating Helper Functions</div>
         <div class="explain">
             Before moving on to the scraping function, there's one last thing to do: write some helper functions! Even after scraping the webpage for HTML and matching regex patterns to get the correct pieces of information, there is still some tweaking that needs to be done to make sure the data is consistent and formatted. Price is written as a string with commas to separate thousands, but since I want to store it as a number I will need a function to fix this. Bedroom and bathroom numbers can sometimes be written in the format "x+y" where "x" represents main bedrooms/bathrooms and "y" represents partial ones. It would make it a lot easier to simply add these values together to make sure bedroom and bathroom counts are consistently represented as a single integer. Finally the square footage can sometimes be written as a range, and other times as just one value (the maximum). To keep consistent, any range is simply turned into its max value. Here are the functions I created to solve these problems:
             <ul></ul>
+        </div>
         </div>
         <div class="notebook-container">
         <div class="cell cell-code">
@@ -139,23 +157,38 @@ def sqftRead(sq):
         </div>
         </div>
         </div>
+        </div>
         <!-- End of Step 2 -->
 
         <!-- Step 3 -->
         <div class="step">
             <div class="name">Step 3: Writing the Scraping Function</div>
+            <div class="section">
+            <div class="text">
             <div class="explain">
-                idk yet
-                <ul></ul>
+                Now that all of the setup has been finished, I can finally begin writing the scraping function. I want to create a function that takes as input the location lists I defined in step 2.1, and outputs a whole data list containing the information I'm scraping for. Thankfully all of this preparation should make writing this function much easier. Let's go through the steps that this function executes in order:
+                <ol>
+                    <li>Before looping through any pages I create the webdriver <code>dr</code> in Chrome, define a base URL string <code>baseURL</code>, and initialize the list <code>houses</code> which will contain the data. I also define a variable <code>prevLen</code> which will help to know when I've reached the end of a page.</li>
+                    <li>Now I take the city name <code>city</code> from the list and begin at the first page <code>pageNum = 1</code> of the site.</li>
+                    <li>I create the new URL <code>url</code> that I will scrape using the <code>baseURL</code>, <code>city</code>, and <code>pageNum</code></li>
+                    <li>I use the webdriver <code>dr</code> to access the URL, then Beautiful Soup <code>soup</code> is used parse the HTML and find the chunk that contains the information I need to be stored in <code>houseList</code>. I also check in case I've gone past the last page of listings for the city, in which case I move on to step 8.</li>
+                    <li>I take a <code>house</code> string in the <code>houseList</code> and using the helper functions and regex patterns I created prior, I collect and organize all of the information into a <code>data</code> object and add it to the <code>houses</code> list. I repeat this step until I've gone through the entire <code>houseList</code>.</li>
+                    <li>Due to possible errors or website blocking, I have to check if the current page correctly added new information to the <code>houses</code> list. If it did, we move on. If it failed, we repeat from step 3 to re-scrape the page.</li>
+                    <li>The page was scraped successfully so I increment the <code>pageNum</code> and return to step 3.</li>
+                    <li>Every page of the city's listings was scraped correctly so I move on to the next <code>city</code> in the list and return to step 2. If there are no more cities, the function is complete and I return the <code>houses</code> list of data I collected.</li>
+                </ol>
             </div>
+            </div>
+            <div class="notebook-container">
             <div class="cell cell-code">
             <div class="cell-prompt input-prompt">In [5]:</div>
             <div class="cell-content">
                 <div class="input-area"><pre>
-## Initiate houses list
-houses = []
-
 def CityListScraper(cityList):
+    """Scrape website for house listing data
+    Input: list object in form ['Province', 'city1-pr', 'city2-pr', ...]
+    Output: list of house listings containing price, size, beds, baths, and property type
+    """
     dr = webdriver.Chrome()
     baseURL = 'https://www.rew.ca/properties/areas/'
     prevLen = 0
@@ -204,8 +237,6 @@ def CityListScraper(cityList):
                     "Square Feet": sqft,
                     "Property Type": prop
                 }
-                if sqft == 0:
-                    print(house,'\n')
                 houses.append(data)
             
             # only proceed to next page if current page was properly scraped
@@ -220,12 +251,950 @@ def CityListScraper(cityList):
     return houses</pre></div>
             </div>
         </div>
+        </div>
+        </div>
+        </div>
+        <!-- End of Step 3 -->
 
 
+        <!-- Step 4 -->
+        <div class="step">
+            <div class="name">Step 4: Running the Scraping Function</div>
+            <div class="section">
+            <div class="text">
+            <div class="explain">
+                Now that the everything is set up and the scraping function has been defined, the only thing left to do is run the function on each of the province-city lists I created beforehand. I save each province's output into its own Pandas dataframe so that there weren't any overwriting issues. I included code in the scraping function to print out information about which city and page it is currently scraping, along with the total number of listings collected thus far. Otherwise there isn't much to look at, but I will still show the code and output created:
+                <ul></ul>
+            </div>
+            </div>
+        <div class="notebook-container">
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [6]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>ON_df = pd.DataFrame(CityListScraper(ON_Cities))</pre></div>
+                <div class="output-area">
+                    <div class="output-wrapper">
+                        <div class="cell-prompt output-prompt"></div>
+                        <div class="output-content">
+                            <div class="output-stream">Scraping toronto-on ...
+      Scraped page 1 | total listings: 24
+      Scraped page 2 | total listings: 48
+      Scraped page 3 | total listings: 72
+      Scraped page 4 | total listings: 96
+      Scraped page 5 | total listings: 120
+      Scraped page 6 | total listings: 144
+      Scraped page 7 | total listings: 168
+      Scraped page 8 | total listings: 192
+      Scraped page 9 | total listings: 216
+      Scraped page 10 | total listings: 240
+      Scraped page 11 | total listings: 264
+      Scraped page 12 | total listings: 288
+      Scraped page 13 | total listings: 312
+      Scraped page 14 | total listings: 336
+      Scraped page 15 | total listings: 360
+      Scraped page 16 | total listings: 384
+      Scraped page 17 | total listings: 408
+      Scraped page 18 | total listings: 432
+      Scraped page 19 | total listings: 456
+      Scraped page 20 | total listings: 480
+      Scraped page 21 | total listings: 504
+      Scraped page 22 | total listings: 528
+      Scraped page 23 | total listings: 552
+      Scraped page 24 | total listings: 576
+      Scraped page 25 | total listings: 600
+Scraping kitchener-on ...
+      Scraped page 1 | total listings: 620
+      Scraped page 2 | total listings: 640
+      Scraped page 3 | total listings: 660
+      Scraped page 4 | total listings: 680
+      Scraped page 5 | total listings: 700
+      Scraped page 6 | total listings: 720
+      Scraped page 7 | total listings: 740
+      Scraped page 8 | total listings: 760
+      Scraped page 9 | total listings: 780
+      Scraped page 10 | total listings: 800
+      Scraped page 11 | total listings: 820
+      Scraped page 12 | total listings: 840
+      Scraped page 13 | total listings: 860
+      Scraped page 14 | total listings: 880
+      Scraped page 15 | total listings: 900
+      Scraped page 16 | total listings: 920
+      Scraped page 17 | total listings: 940
+      Scraped page 18 | total listings: 960
+      Scraped page 19 | total listings: 980
+      Scraped page 20 | total listings: 1000
+      Scraped page 21 | total listings: 1020
+      Scraped page 22 | total listings: 1040
+      Scraped page 23 | total listings: 1060
+      Scraped page 24 | total listings: 1080
+      Scraped page 25 | total listings: 1100
+Scraping waterloo-on ...
+      Scraped page 1 | total listings: 1120
+      Scraped page 2 | total listings: 1140
+      Scraped page 3 | total listings: 1160
+      Scraped page 4 | total listings: 1180
+      Scraped page 5 | total listings: 1200
+      Scraped page 6 | total listings: 1220
+      Scraped page 7 | total listings: 1240
+      Scraped page 8 | total listings: 1260
+      Scraped page 9 | total listings: 1280
+      Scraped page 10 | total listings: 1300
+      Scraped page 11 | total listings: 1320
+      Scraped page 12 | total listings: 1340
+      Scraped page 13 | total listings: 1360
+      Scraped page 14 | total listings: 1380
+      Scraped page 15 | total listings: 1400
+      Scraped page 16 | total listings: 1420
+      Scraped page 17 | total listings: 1440
+      Scraped page 18 | total listings: 1460
+      Scraped page 19 | total listings: 1480
+      Scraped page 20 | total listings: 1500
+      Scraped page 21 | total listings: 1520
+      Scraped page 22 | total listings: 1540
+      Scraped page 23 | total listings: 1560
+      Scraped page 24 | total listings: 1580
+      Scraped page 25 | total listings: 1600
+Scraping london-on ...
+      Scraped page 1 | total listings: 1620
+      Scraped page 2 | total listings: 1640
+      Scraped page 3 | total listings: 1660
+      Scraped page 4 | total listings: 1680
+      Scraped page 5 | total listings: 1700
+      Scraped page 6 | total listings: 1720
+      Scraped page 7 | total listings: 1740
+      Scraped page 8 | total listings: 1760
+      Scraped page 9 | total listings: 1780
+      Scraped page 10 | total listings: 1800
+      Scraped page 11 | total listings: 1820
+      Scraped page 12 | total listings: 1840
+      Scraped page 13 | total listings: 1860
+      Scraped page 14 | total listings: 1880
+      Scraped page 15 | total listings: 1900
+      Scraped page 16 | total listings: 1920
+      Scraped page 17 | total listings: 1940
+      Scraped page 18 | total listings: 1960
+      Scraped page 19 | total listings: 1980
+      Scraped page 20 | total listings: 2000
+      Scraped page 21 | total listings: 2020
+      Scraped page 22 | total listings: 2040
+      Scraped page 23 | total listings: 2060
+      Scraped page 24 | total listings: 2080
+      Scraped page 25 | total listings: 2100
+Scraping ottawa-on ...
+      Scraped page 1 | total listings: 2120
+      Scraped page 2 | total listings: 2140
+      Scraped page 3 | total listings: 2160
+      Scraped page 4 | total listings: 2180
+      Scraped page 5 | total listings: 2200
+      Scraped page 6 | total listings: 2220
+      Scraped page 7 | total listings: 2240
+      Scraped page 8 | total listings: 2260
+      Scraped page 9 | total listings: 2280
+      Scraped page 10 | total listings: 2300
+      Scraped page 11 | total listings: 2320
+      Scraped page 12 | total listings: 2340
+      Scraped page 13 | total listings: 2360
+      Scraped page 14 | total listings: 2380
+      Scraped page 15 | total listings: 2400
+      Scraped page 16 | total listings: 2420
+      Scraped page 17 | total listings: 2440
+      Scraped page 18 | total listings: 2460
+      Scraped page 19 | total listings: 2480
+      Scraped page 20 | total listings: 2500
+      Scraped page 21 | total listings: 2520
+      Scraped page 22 | total listings: 2540
+      Scraped page 23 | total listings: 2560
+      Scraped page 24 | total listings: 2580
+      Scraped page 25 | total listings: 2600
+Scraping guelph-on ...
+      Scraped page 1 | total listings: 2620
+      Scraped page 2 | total listings: 2640
+      Scraped page 3 | total listings: 2660
+      Scraped page 4 | total listings: 2680
+      Scraped page 5 | total listings: 2700
+      Scraped page 6 | total listings: 2720
+      Scraped page 7 | total listings: 2740
+      Scraped page 8 | total listings: 2760
+      Scraped page 9 | total listings: 2780
+      Scraped page 10 | total listings: 2800
+      Scraped page 11 | total listings: 2820
+      Scraped page 12 | total listings: 2840
+      Scraped page 13 | total listings: 2860
+      Scraped page 14 | total listings: 2880
+      Scraped page 15 | total listings: 2900
+      Scraped page 16 | total listings: 2920
+      Scraped page 17 | total listings: 2940
+      Scraped page 18 | total listings: 2960
+      Scraped page 19 | total listings: 2980
+      Scraped page 20 | total listings: 3000
+      Scraped page 21 | total listings: 3020
+      Scraped page 22 | total listings: 3040
+      Scraped page 23 | total listings: 3060
+      Scraped page 24 | total listings: 3080
+      Scraped page 25 | total listings: 3088
+Scraping hamilton-on ...
+      Scraped page 1 | total listings: 3111
+      Scraped page 2 | total listings: 3134
+      Scraped page 3 | total listings: 3157
+      Scraped page 4 | total listings: 3180
+      Scraped page 5 | total listings: 3203
+      Scraped page 6 | total listings: 3226
+      Scraped page 7 | total listings: 3249
+      Scraped page 8 | total listings: 3272
+      Scraped page 9 | total listings: 3295
+      Scraped page 10 | total listings: 3318
+      Scraped page 11 | total listings: 3341
+      Scraped page 12 | total listings: 3364
+      Scraped page 13 | total listings: 3387
+      Scraped page 14 | total listings: 3410
+      Scraped page 15 | total listings: 3433
+      Scraped page 16 | total listings: 3456
+      Scraped page 17 | total listings: 3479
+      Scraped page 18 | total listings: 3502
+      Scraped page 19 | total listings: 3525
+      Scraped page 20 | total listings: 3548
+      Scraped page 21 | total listings: 3571
+      Scraped page 22 | total listings: 3594
+      Scraped page 23 | total listings: 3617
+      Scraped page 24 | total listings: 3640
+      Scraped page 25 | total listings: 3663
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [7]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>BC_df = pd.DataFrame(CityListScraper(BC_Cities))</pre></div>
+                <div class="output-area">
+                    <div class="output-wrapper">
+                        <div class="cell-prompt output-prompt"></div>
+                        <div class="output-content">
+                            <div class="output-stream">Scraping vancouver-bc ...
+      Scraped page 1 | total listings: 25
+      Scraped page 2 | total listings: 50
+      Scraped page 3 | total listings: 75
+      Scraped page 4 | total listings: 100
+      Scraped page 5 | total listings: 125
+      Scraped page 6 | total listings: 150
+      Scraped page 7 | total listings: 175
+      Scraped page 8 | total listings: 200
+      Scraped page 9 | total listings: 225
+      Scraped page 10 | total listings: 250
+      Scraped page 11 | total listings: 275
+      Scraped page 12 | total listings: 300
+      Scraped page 13 | total listings: 325
+      Scraped page 14 | total listings: 350
+      Scraped page 15 | total listings: 375
+      Scraped page 16 | total listings: 400
+      Scraped page 17 | total listings: 425
+      Scraped page 18 | total listings: 450
+      Scraped page 19 | total listings: 475
+      Scraped page 20 | total listings: 500
+      Scraped page 21 | total listings: 525
+      Scraped page 22 | total listings: 550
+      Scraped page 23 | total listings: 575
+      Scraped page 24 | total listings: 600
+      Scraped page 25 | total listings: 625
+Scraping victoria-bc ...
+      Scraped page 1 | total listings: 649
+      Scraped page 2 | total listings: 673
+      Scraped page 3 | total listings: 697
+      Scraped page 4 | total listings: 721
+      Scraped page 5 | total listings: 745
+      Scraped page 6 | total listings: 769
+      Scraped page 7 | total listings: 793
+      Scraped page 8 | total listings: 817
+      Scraped page 9 | total listings: 841
+      Scraped page 10 | total listings: 865
+      Scraped page 11 | total listings: 889
+      Scraped page 12 | total listings: 913
+      Scraped page 13 | total listings: 937
+      Scraped page 14 | total listings: 961
+      Scraped page 15 | total listings: 985
+      Scraped page 16 | total listings: 1009
+      Scraped page 17 | total listings: 1033
+      Scraped page 18 | total listings: 1057
+      Scraped page 19 | total listings: 1081
+      Scraped page 20 | total listings: 1105
+      Scraped page 21 | total listings: 1129
+      Scraped page 22 | total listings: 1153
+      Scraped page 23 | total listings: 1177
+      Scraped page 24 | total listings: 1201
+      Scraped page 25 | total listings: 1215
+Scraping nanaimo-bc ...
+      Scraped page 1 | total listings: 1239
+      Scraped page 2 | total listings: 1263
+      Scraped page 3 | total listings: 1287
+      Scraped page 4 | total listings: 1311
+      Scraped page 5 | total listings: 1335
+      Scraped page 6 | total listings: 1359
+      Scraped page 7 | total listings: 1383
+      Scraped page 8 | total listings: 1407
+      Scraped page 9 | total listings: 1431
+      Scraped page 10 | total listings: 1455
+      Scraped page 11 | total listings: 1479
+      Scraped page 12 | total listings: 1503
+      Scraped page 13 | total listings: 1527
+      Scraped page 14 | total listings: 1551
+      Scraped page 15 | total listings: 1575
+      Scraped page 16 | total listings: 1599
+      Scraped page 17 | total listings: 1623
+      Scraped page 18 | total listings: 1647
+      Scraped page 19 | total listings: 1671
+      Scraped page 20 | total listings: 1695
+      Scraped page 21 | total listings: 1719
+      Scraped page 22 | total listings: 1743
+      Scraped page 23 | total listings: 1767
+      Scraped page 24 | total listings: 1791
+      Scraped page 25 | total listings: 1815
+Scraping surrey-bc ...
+      Scraped page 1 | total listings: 1840
+      Scraped page 2 | total listings: 1865
+      Scraped page 3 | total listings: 1890
+      Scraped page 4 | total listings: 1915
+      Scraped page 5 | total listings: 1940
+      Scraped page 6 | total listings: 1965
+      Scraped page 7 | total listings: 1990
+      Scraped page 8 | total listings: 2015
+      Scraped page 9 | total listings: 2040
+      Scraped page 10 | total listings: 2065
+      Scraped page 11 | total listings: 2090
+      Scraped page 12 | total listings: 2115
+      Scraped page 13 | total listings: 2140
+      Scraped page 14 | total listings: 2165
+      Scraped page 15 | total listings: 2190
+      Scraped page 16 | total listings: 2215
+      Scraped page 17 | total listings: 2240
+      Scraped page 18 | total listings: 2265
+      Scraped page 19 | total listings: 2290
+      Scraped page 20 | total listings: 2315
+      Scraped page 21 | total listings: 2340
+      Scraped page 22 | total listings: 2365
+      Scraped page 23 | total listings: 2390
+      Scraped page 24 | total listings: 2415
+      Scraped page 25 | total listings: 2440
+Scraping burnaby-bc ...
+      Scraped page 1 | total listings: 2465
+      Scraped page 2 | total listings: 2490
+      Scraped page 3 | total listings: 2515
+      Scraped page 4 | total listings: 2540
+      Scraped page 5 | total listings: 2565
+      Scraped page 6 | total listings: 2590
+      Scraped page 7 | total listings: 2615
+      Scraped page 8 | total listings: 2640
+      Scraped page 9 | total listings: 2665
+      Scraped page 10 | total listings: 2690
+      Scraped page 11 | total listings: 2715
+      Scraped page 12 | total listings: 2740
+      Scraped page 13 | total listings: 2765
+      Scraped page 14 | total listings: 2790
+      Scraped page 15 | total listings: 2815
+      Scraped page 16 | total listings: 2840
+      Scraped page 17 | total listings: 2865
+      Scraped page 18 | total listings: 2890
+      Scraped page 19 | total listings: 2915
+      Scraped page 20 | total listings: 2940
+      Scraped page 21 | total listings: 2965
+      Scraped page 22 | total listings: 2990
+      Scraped page 23 | total listings: 3015
+      Scraped page 24 | total listings: 3040
+      Scraped page 25 | total listings: 3065
+Scraping coquitlam-bc ...
+      Scraped page 1 | total listings: 3090
+      Scraped page 2 | total listings: 3115
+      Scraped page 3 | total listings: 3140
+      Scraped page 4 | total listings: 3165
+      Scraped page 5 | total listings: 3190
+      Scraped page 6 | total listings: 3215
+      Scraped page 7 | total listings: 3240
+      Scraped page 8 | total listings: 3265
+      Scraped page 9 | total listings: 3290
+      Scraped page 10 | total listings: 3315
+      Scraped page 11 | total listings: 3340
+      Scraped page 12 | total listings: 3365
+      Scraped page 13 | total listings: 3390
+      Scraped page 14 | total listings: 3415
+      Scraped page 15 | total listings: 3440
+      Scraped page 16 | total listings: 3465
+      Scraped page 17 | total listings: 3490
+      Scraped page 18 | total listings: 3515
+      Scraped page 19 | total listings: 3540
+      Scraped page 20 | total listings: 3565
+      Scraped page 21 | total listings: 3590
+      Scraped page 22 | total listings: 3615
+      Scraped page 23 | total listings: 3640
+      Scraped page 24 | total listings: 3665
+      Scraped page 25 | total listings: 3690
+Scraping richmond-bc ...
+      Scraped page 1 | total listings: 3714
+      Scraped page 2 | total listings: 3738
+      Scraped page 3 | total listings: 3762
+      Scraped page 4 | total listings: 3786
+      Scraped page 5 | total listings: 3810
+      Scraped page 6 | total listings: 3834
+      Scraped page 7 | total listings: 3858
+      Scraped page 8 | total listings: 3882
+      Scraped page 9 | total listings: 3906
+      Scraped page 10 | total listings: 3930
+      Scraped page 11 | total listings: 3954
+      Scraped page 12 | total listings: 3978
+      Scraped page 13 | total listings: 4002
+      Scraped page 14 | total listings: 4026
+      Scraped page 15 | total listings: 4050
+      Scraped page 16 | total listings: 4074
+      Scraped page 17 | total listings: 4098
+      Scraped page 18 | total listings: 4122
+      Scraped page 19 | total listings: 4146
+      Scraped page 20 | total listings: 4170
+      Scraped page 21 | total listings: 4194
+      Scraped page 22 | total listings: 4218
+      Scraped page 23 | total listings: 4242
+      Scraped page 24 | total listings: 4266
+      Scraped page 25 | total listings: 4290
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [8]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>AB_df = pd.DataFrame(CityListScraper(AB_Cities))</pre></div>
+                <div class="output-area">
+                    <div class="output-wrapper">
+                        <div class="cell-prompt output-prompt"></div>
+                        <div class="output-content">
+                            <div class="output-stream">Scraping calgary-ab ...
+      Scraped page 1 | total listings: 22
+      Scraped page 2 | total listings: 44
+      Scraped page 3 | total listings: 66
+      Scraped page 4 | total listings: 88
+      Scraped page 5 | total listings: 110
+      Scraped page 6 | total listings: 132
+      Scraped page 7 | total listings: 154
+      Scraped page 8 | total listings: 176
+      Scraped page 9 | total listings: 198
+      Scraped page 10 | total listings: 220
+      Scraped page 11 | total listings: 242
+      Scraped page 12 | total listings: 264
+      Scraped page 13 | total listings: 286
+      Scraped page 14 | total listings: 308
+      Scraped page 15 | total listings: 330
+      Scraped page 16 | total listings: 352
+      Scraped page 17 | total listings: 374
+      Scraped page 18 | total listings: 396
+      Scraped page 19 | total listings: 418
+      Scraped page 20 | total listings: 440
+      Scraped page 21 | total listings: 462
+      Scraped page 22 | total listings: 484
+      Scraped page 23 | total listings: 506
+      Scraped page 24 | total listings: 528
+      Scraped page 25 | total listings: 550
+Scraping edmonton-ab ...
+      Scraped page 1 | total listings: 573
+      Scraped page 2 | total listings: 596
+      Scraped page 3 | total listings: 619
+      Scraped page 4 | total listings: 642
+      Scraped page 5 | total listings: 665
+      Scraped page 6 | total listings: 688
+      Scraped page 7 | total listings: 711
+      Scraped page 8 | total listings: 734
+      Scraped page 9 | total listings: 757
+      Scraped page 10 | total listings: 780
+      Scraped page 11 | total listings: 803
+      Scraped page 12 | total listings: 826
+      Scraped page 13 | total listings: 849
+      Scraped page 14 | total listings: 872
+      Scraped page 15 | total listings: 895
+      Scraped page 16 | total listings: 918
+      Scraped page 17 | total listings: 941
+      Scraped page 18 | total listings: 964
+      Scraped page 19 | total listings: 987
+      Scraped page 20 | total listings: 1010
+      Scraped page 21 | total listings: 1033
+      Scraped page 22 | total listings: 1056
+      Scraped page 23 | total listings: 1079
+      Scraped page 24 | total listings: 1102
+      Scraped page 25 | total listings: 1125
+Scraping lethbridge-ab ...
+      Scraped page 1 | total listings: 1145
+      Scraped page 2 | total listings: 1165
+      Scraped page 3 | total listings: 1185
+      Scraped page 4 | total listings: 1205
+      Scraped page 5 | total listings: 1225
+      Scraped page 6 | total listings: 1245
+      Scraped page 7 | total listings: 1265
+      Scraped page 8 | total listings: 1285
+      Scraped page 9 | total listings: 1305
+      Scraped page 10 | total listings: 1325
+      Scraped page 11 | total listings: 1345
+      Scraped page 12 | total listings: 1365
+      Scraped page 13 | total listings: 1385
+      Scraped page 14 | total listings: 1405
+      Scraped page 15 | total listings: 1425
+      Scraped page 16 | total listings: 1445
+      Scraped page 17 | total listings: 1465
+      Scraped page 18 | total listings: 1485
+      Scraped page 19 | total listings: 1505
+      Scraped page 20 | total listings: 1525
+      Scraped page 21 | total listings: 1545
+      Scraped page 22 | total listings: 1561
+Scraping red-deer-ab ...
+      Scraped page 1 | total listings: 1581
+      Scraped page 2 | total listings: 1601
+      Scraped page 3 | total listings: 1621
+      Scraped page 4 | total listings: 1641
+      Scraped page 5 | total listings: 1661
+      Scraped page 6 | total listings: 1681
+      Scraped page 7 | total listings: 1701
+      Scraped page 8 | total listings: 1721
+      Scraped page 9 | total listings: 1741
+      Scraped page 10 | total listings: 1761
+      Scraped page 11 | total listings: 1781
+      Scraped page 12 | total listings: 1801
+      Scraped page 13 | total listings: 1821
+      Scraped page 14 | total listings: 1841
+      Scraped page 15 | total listings: 1861
+      Scraped page 16 | total listings: 1881
+      Scraped page 17 | total listings: 1900
+Scraping airdrie-ab ...
+      Scraped page 1 | total listings: 1920
+      Scraped page 2 | total listings: 1940
+      Scraped page 3 | total listings: 1960
+      Scraped page 4 | total listings: 1980
+      Scraped page 5 | total listings: 2000
+      Scraped page 6 | total listings: 2020
+      Scraped page 7 | total listings: 2040
+      Scraped page 8 | total listings: 2060
+      Scraped page 9 | total listings: 2080
+      Scraped page 10 | total listings: 2100
+      Scraped page 11 | total listings: 2120
+      Scraped page 12 | total listings: 2140
+      Scraped page 13 | total listings: 2160
+      Scraped page 14 | total listings: 2180
+      Scraped page 15 | total listings: 2200
+      Scraped page 16 | total listings: 2220
+      Scraped page 17 | total listings: 2240
+      Scraped page 18 | total listings: 2260
+      Scraped page 19 | total listings: 2280
+      Scraped page 20 | total listings: 2300
+      Scraped page 21 | total listings: 2320
+      Scraped page 22 | total listings: 2340
+      Scraped page 23 | total listings: 2360
+      Scraped page 24 | total listings: 2380
+      Scraped page 25 | total listings: 2400
+Scraping medicine-hat-ab ...
+      Scraped page 1 | total listings: 2420
+      Scraped page 2 | total listings: 2440
+      Scraped page 3 | total listings: 2460
+      Scraped page 4 | total listings: 2480
+      Scraped page 5 | total listings: 2500
+      Scraped page 6 | total listings: 2520
+      Scraped page 7 | total listings: 2540
+      Scraped page 8 | total listings: 2560
+      Scraped page 9 | total listings: 2566
+Scraping st-albert-ab ...
+      Scraped page 1 | total listings: 2586
+      Scraped page 2 | total listings: 2606
+      Scraped page 3 | total listings: 2626
+      Scraped page 4 | total listings: 2646
+      Scraped page 5 | total listings: 2666
+      Scraped page 6 | total listings: 2686
+      Scraped page 7 | total listings: 2706
+      Scraped page 8 | total listings: 2726
+      Scraped page 9 | total listings: 2746
+      Scraped page 10 | total listings: 2766
+      Scraped page 11 | total listings: 2786
+      Scraped page 12 | total listings: 2796
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [9]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>SK_df = pd.DataFrame(CityListScraper(SK_Cities))</pre></div>
+                <div class="output-area">
+                    <div class="output-wrapper">
+                        <div class="cell-prompt output-prompt"></div>
+                        <div class="output-content">
+                            <div class="output-stream">Scraping regina-sk ...
+      Scraped page 1 | total listings: 20
+      Scraped page 2 | total listings: 40
+      Scraped page 3 | total listings: 60
+      Scraped page 4 | total listings: 80
+      Scraped page 5 | total listings: 100
+      Scraped page 6 | total listings: 120
+      Scraped page 7 | total listings: 140
+      Scraped page 8 | total listings: 160
+      Scraped page 9 | total listings: 180
+      Scraped page 10 | total listings: 200
+      Scraped page 11 | total listings: 220
+      Scraped page 12 | total listings: 240
+      Scraped page 13 | total listings: 260
+      Scraped page 14 | total listings: 280
+      Scraped page 15 | total listings: 300
+      Scraped page 16 | total listings: 320
+      Scraped page 17 | total listings: 340
+      Scraped page 18 | total listings: 360
+      Scraped page 19 | total listings: 380
+      Scraped page 20 | total listings: 400
+      Scraped page 21 | total listings: 420
+      Scraped page 22 | total listings: 440
+      Scraped page 23 | total listings: 460
+      Scraped page 24 | total listings: 480
+      Scraped page 25 | total listings: 500
+Scraping saskatoon-sk ...
+      Scraped page 1 | total listings: 520
+      Scraped page 2 | total listings: 540
+      Scraped page 3 | total listings: 560
+      Scraped page 4 | total listings: 580
+      Scraped page 5 | total listings: 600
+      Scraped page 6 | total listings: 620
+      Scraped page 7 | total listings: 640
+      Scraped page 8 | total listings: 660
+      Scraped page 9 | total listings: 680
+      Scraped page 10 | total listings: 700
+      Scraped page 11 | total listings: 720
+      Scraped page 12 | total listings: 740
+      Scraped page 13 | total listings: 760
+      Scraped page 14 | total listings: 780
+      Scraped page 15 | total listings: 800
+      Scraped page 16 | total listings: 820
+      Scraped page 17 | total listings: 840
+      Scraped page 18 | total listings: 860
+      Scraped page 19 | total listings: 880
+      Scraped page 20 | total listings: 900
+      Scraped page 21 | total listings: 920
+      Scraped page 22 | total listings: 940
+      Scraped page 23 | total listings: 960
+      Scraped page 24 | total listings: 980
+      Scraped page 25 | total listings: 1000
+Scraping prince-albert-sk ...
+      Scraped page 1 | total listings: 1020
+      Scraped page 2 | total listings: 1040
+      Scraped page 3 | total listings: 1045
+Scraping moose-jaw-sk ...
+      Scraped page 1 | total listings: 1065
+      Scraped page 2 | total listings: 1085
+      Scraped page 3 | total listings: 1105
+      Scraped page 4 | total listings: 1125
+      Scraped page 5 | total listings: 1140
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [10]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>MB_df = pd.DataFrame(CityListScraper(MB_Cities))</pre></div>
+                <div class="output-area">
+                    <div class="output-wrapper">
+                        <div class="cell-prompt output-prompt"></div>
+                        <div class="output-content">
+                            <div class="output-stream">Scraping winnipeg-mb ...
+      Scraped page 1 | total listings: 20
+      Scraped page 2 | total listings: 40
+      Scraped page 3 | total listings: 60
+      Scraped page 4 | total listings: 80
+      Scraped page 5 | total listings: 100
+      Scraped page 6 | total listings: 120
+      Scraped page 7 | total listings: 140
+      Scraped page 8 | total listings: 160
+      Scraped page 9 | total listings: 180
+      Scraped page 10 | total listings: 200
+      Scraped page 11 | total listings: 220
+      Scraped page 12 | total listings: 240
+      Scraped page 13 | total listings: 260
+      Scraped page 14 | total listings: 280
+      Scraped page 15 | total listings: 300
+      Scraped page 16 | total listings: 320
+      Scraped page 17 | total listings: 340
+      Scraped page 18 | total listings: 360
+      Scraped page 19 | total listings: 380
+      Scraped page 20 | total listings: 400
+      Scraped page 21 | total listings: 420
+      Scraped page 22 | total listings: 440
+      Scraped page 23 | total listings: 460
+      Scraped page 24 | total listings: 480
+      Scraped page 25 | total listings: 500
+Scraping brandon-mb ...
+      Scraped page 1 | total listings: 520
+      Scraped page 2 | total listings: 540
+      Scraped page 3 | total listings: 557
+Scraping steinbach-mb ...
+      Scraped page 1 | total listings: 578
+      Scraped page 2 | total listings: 599
+      Scraped page 3 | total listings: 620
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [11]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>NB_df = pd.DataFrame(CityListScraper(NB_Cities))</pre></div>
+                <div class="output-area">
+                    <div class="output-wrapper">
+                        <div class="cell-prompt output-prompt"></div>
+                        <div class="output-content">
+                            <div class="output-stream">Scraping fredericton-nb ...
+      Scraped page 1 | total listings: 20
+      Scraped page 2 | total listings: 40
+      Scraped page 3 | total listings: 60
+      Scraped page 4 | total listings: 80
+      Scraped page 5 | total listings: 100
+      Scraped page 6 | total listings: 120
+      Scraped page 7 | total listings: 140
+      Scraped page 8 | total listings: 160
+Scraping moncton-nb ...
+      Scraped page 1 | total listings: 180
+      Scraped page 2 | total listings: 200
+      Scraped page 3 | total listings: 220
+      Scraped page 4 | total listings: 240
+      Scraped page 5 | total listings: 260
+      Scraped page 6 | total listings: 280
+      Scraped page 7 | total listings: 300
+      Scraped page 8 | total listings: 320
+      Scraped page 9 | total listings: 340
+      Scraped page 10 | total listings: 360
+      Scraped page 11 | total listings: 380
+      Scraped page 12 | total listings: 400
+      Scraped page 13 | total listings: 420
+      Scraped page 14 | total listings: 440
+      Scraped page 15 | total listings: 460
+      Scraped page 16 | total listings: 480
+      Scraped page 17 | total listings: 500
+      Scraped page 18 | total listings: 513
+Scraping saint-john-nb ...
+      Scraped page 1 | total listings: 533
+      Scraped page 2 | total listings: 553
+      Scraped page 3 | total listings: 573
+      Scraped page 4 | total listings: 593
+      Scraped page 5 | total listings: 613
+      Scraped page 6 | total listings: 633
+      Scraped page 7 | total listings: 653
+      Scraped page 8 | total listings: 673
+      Scraped page 9 | total listings: 693
+      Scraped page 10 | total listings: 713
+      Scraped page 11 | total listings: 733
+      Scraped page 12 | total listings: 736
+Scraping dieppe-nb ...
+      Scraped page 1 | total listings: 756
+      Scraped page 2 | total listings: 776
+      Scraped page 3 | total listings: 796
+      Scraped page 4 | total listings: 816
+      Scraped page 5 | total listings: 836
+      Scraped page 6 | total listings: 856
+      Scraped page 7 | total listings: 876
+      Scraped page 8 | total listings: 896
+      Scraped page 9 | total listings: 906
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
-            End
+        </div>
+        </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="step">
+            <div class="name">Step 5: Saving and Exporting</div>
+            <div class="section">
+            <div class="text">
+                <div class="explain">
+                    Now that I've scraped all of the house listing data, I can finally collect it all together in a single dataframe. For the rest of this project I will be working in R, so I need to export this data to a file that can be opened and read into a dataframe  in R. Since I saved my provincial data in Pandas dataframes I simply have to concatenate them into a larger one <code>housing_df</code>, then I export it into a .CSV file I named "housing_df.csv". I also took a sneak-peek of the first and last bunch of rows from the dataframe. I can already see there are some rows with invalid data values for certain columns, so I will be sure to fix this later.
+                    <ul></ul>
+                </div>
+            </div>
+            <div class="notebook-container">
+            <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [12]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>housing_df = pd.concat([ON_df, BC_df, AB_df, SK_df, MB_df, NB_df], ignore_index=True)
+housing_df</pre></div>
+                <div class="output-area">
+                    <div class="output-wrapper">
+                        <div class="cell-prompt output-prompt">Out[12]:</div>
+                        <div class="output-content">
+                            <div class="output-html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Province</th>
+      <th>City</th>
+      <th>Price</th>
+      <th>Bedrooms</th>
+      <th>Bathrooms</th>
+      <th>Square Feet</th>
+      <th>Property Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Ontario</td>
+      <td>toronto-on</td>
+      <td>2649000.0</td>
+      <td>5.0</td>
+      <td>4.0</td>
+      <td>3000.0</td>
+      <td>House</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Ontario</td>
+      <td>toronto-on</td>
+      <td>2365000.0</td>
+      <td>6.0</td>
+      <td>5.0</td>
+      <td>5000.0</td>
+      <td>House</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Ontario</td>
+      <td>toronto-on</td>
+      <td>799000.0</td>
+      <td>2.0</td>
+      <td>2.0</td>
+      <td>1399.0</td>
+      <td>Apt/Condo</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ontario</td>
+      <td>toronto-on</td>
+      <td>368000.0</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>699.0</td>
+      <td>Apt/Condo</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Ontario</td>
+      <td>toronto-on</td>
+      <td>463800.0</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>499.0</td>
+      <td>Apt/Condo</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>13410</th>
+      <td>New Brunswick</td>
+      <td>dieppe-nb</td>
+      <td>245000.0</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Land/Lot</td>
+    </tr>
+    <tr>
+      <th>13411</th>
+      <td>New Brunswick</td>
+      <td>dieppe-nb</td>
+      <td>350000.0</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Land/Lot</td>
+    </tr>
+    <tr>
+      <th>13412</th>
+      <td>New Brunswick</td>
+      <td>dieppe-nb</td>
+      <td>350000.0</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Land/Lot</td>
+    </tr>
+    <tr>
+      <th>13413</th>
+      <td>New Brunswick</td>
+      <td>dieppe-nb</td>
+      <td>255000.0</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Land/Lot</td>
+    </tr>
+    <tr>
+      <th>13414</th>
+      <td>New Brunswick</td>
+      <td>dieppe-nb</td>
+      <td>225000.0</td>
+      <td>0.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Land/Lot</td>
+    </tr>
+  </tbody>
+</table>
+<p>13415 rows × 7 columns</p>
+</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="cell cell-code">
+            <div class="cell-prompt input-prompt">In [13]:</div>
+            <div class="cell-content">
+                <div class="input-area"><pre>## let's save the dataframe as a csv file
+housing_df.to_csv("housing_df.csv", index=False)</pre></div>
+            </div>
+        </div>
+        </div>
+        </div>
+        </div>
+
+
+        End
         </div>
         <footer class="footer">
             <div class="col1">

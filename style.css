@@ -122,7 +122,7 @@ header nav a:hover, header nav .menu:hover{
 .main{
     clear:both;
     background-color: white;
-    padding:0%;
+    padding:5% 0%;
 }
 
 .main img{
@@ -136,9 +136,11 @@ header nav a:hover, header nav .menu:hover{
 - prevent overflow between articles
 */
 .main .step{
-    border-bottom:black solid 1px;
-    padding:5% 5% 5%;
+    border-bottom:white solid 1px;
+    padding:0% 5% 5%;
 }
+
+
 .main .name{
     font-size:175%;
     font-weight: bold;
@@ -150,12 +152,18 @@ header nav a:hover, header nav .menu:hover{
 }
 .main .explain{
     padding:10px 0px 0px;
+    text-indent: 2em;
 }
-.main .explain ul{
+.main .explain ul, ol{
     padding:0px 5%;
+    text-indent:1em;
 }
 .main .explain ul li::marker{
     font-size:0.8em;
+}
+.main .explain code{
+    background-color: var(--jp-cell-input-bg);
+    border: var(--jp-border-color1) solid 1px;
 }
 
 
@@ -166,8 +174,8 @@ header nav a:hover, header nav .menu:hover{
     max-width: 900px;
     margin: 0 auto;
     padding: 10px;
-    border:lightgray
-     solid 1px;
+    overflow:auto;
+    border:#307fc1 solid 1px;
 }
 /* Cell structure */
 .cell {
@@ -217,6 +225,101 @@ header nav a:hover, header nav .menu:hover{
 
 
 
+/* Output area */
+.output-area {
+    margin-top: 0;
+}
+
+.output-wrapper {
+    display: flex;
+    flex-direction: row;
+    margin-top: 4px;
+}
+
+.output-content {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 0;
+}
+
+.output-content pre {
+    margin: 0;
+    font-family: var(--jp-code-font-family);
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Stream output (stdout/stderr) */
+.output-stream {
+    font-family: var(--jp-code-font-family);
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.output-stderr {
+    background-color: #fdd;
+    padding: 8px 12px;
+    border-radius: 2px;
+}
+
+/* Execute result / display data */
+.output-result {
+    padding: 4px 0;
+}
+
+.output-result pre {
+    margin: 0;
+    font-family: var(--jp-code-font-family);
+    font-size: 13px;
+}
+
+/* Image output */
+.output-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* HTML output (DataFrames, etc.) */
+.output-html {
+    overflow-x: auto;
+}
+
+.output-html table {
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: var(--jp-content-font-family);
+}
+
+.output-html table th,
+.output-html table td {
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+    text-align: left;
+}
+
+.output-html table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+}
+
+.output-html table tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* Error output */
+.output-error {
+    background-color: #fff0f0;
+    padding: 8px 12px;
+    border-radius: 2px;
+    font-family: var(--jp-code-font-family);
+    font-size: 13px;
+    white-space: pre-wrap;
+}
 
 
 
@@ -262,9 +365,7 @@ header nav a:hover, header nav .menu:hover{
 /* 
 Changes are made when the width of the page is less than 740px 
 */
-@media all and (max-width:740px){
-    /* Body changes colour */
-    body{background-color: red;}
+@media all and (max-width:1200px){
     /* Navigation list items change orientation and center*/
     header nav ul li{display:block;text-align:center;width:98%;}
     /* Menu 
@@ -279,7 +380,38 @@ Changes are made when the width of the page is less than 740px
     .hide{
         display:none;
     }
+    .step .notebook-container{
+        max-height:50vh;
+    }
 }
+
+
+/* 
+Changes are made when the width of the page is more than 1000px 
+*/
+@media all and (min-width:1200px){
+
+    .step .section{
+        width:100%;
+        display:flex;
+        padding:1%;
+        border-bottom: lightgray solid 1px;
+    }
+
+    .step .text{
+        display:flex;
+        flex-direction:column;
+        width:40%;
+    }
+
+    .step .notebook-container{
+        width:40%;
+        max-height:60vh;
+    }
+}
+
+
+
 
 
 
