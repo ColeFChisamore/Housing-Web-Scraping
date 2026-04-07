@@ -3,7 +3,7 @@ title: "HWS in R Studio"
 author: "Cole Chisamore"
 date: "2025-11-11"
 output: 
-  pdf_document:
+  html_document:
      number_sections: true
      toc: true
 ---
@@ -51,7 +51,7 @@ houses.df <- houses.df %>% mutate(`Property Type` = fct_reorder(
 houses.df <- houses.df %>% rename(PropertyType = `Property Type`)
 houses.df <- houses.df %>% rename(SquareFeet = `Square Feet`)
 ## Creating first model:
-houses.glm1 <- glm(formula = Price~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+houses.glm1 <- glm(formula = Price~Bedrooms+Bathrooms+SquareFeet+PropertyType+Province+Population,
                    data=houses.df)
 #' Prints a concise summary of model
 #'
@@ -65,11 +65,16 @@ my_summary <- function(model, name="Unnamed Model"){
 my_summary(houses.glm1, "Naive Model")
 ```
 
+```{r, echo=FALSE}
+houses.df <- houses.df %>%
+  select(-new)
+```
+
 \newpage
 
 Before analyzing, let's also check the error of the model and create a qqplot of residuals for trained model:
 
-```{r, fig.width=6, fig.height=4}
+```{r}
 #' Calculates percent error between predictions and actual values
 #' 
 #' @param preds predicted values
@@ -87,12 +92,13 @@ qqline(houses.glm1.res)
 
 ## Initial Model Remarks 
 
-* A percent error of ~53% is not great, so hopefully I can create a better model later on
+* A percent error of ~39.9% is not great, so hopefully I can create a better model later on
 * The Q-Q plot shows heavy tails off of the normal line, especially on the right
   * This implies that the 'Price' variable is not normally distributed enough with many outliers (especially high outliers)
   * Perhaps removing these outliers and/or transforming Price could help
 * the Bedrooms variable is oddly assigned a negative (and significant) correlation with Price, which is counter-intuitive since more bedrooms would seem to imply high cost
 * multiple Property Type categories are deemed to have insignificant difference from "House", perhaps I can reduce the number of categories or fix them some other way
+* Saskatchewan is not significant and Manitoba is just barely, perhaps they have similar distributions so I can merge these together?
 
 \newpage
 
@@ -106,7 +112,7 @@ In this section I will begin augmenting the variables of my dataframe through tr
 
 Since Price is the response variable of our model, it will be the most important one to have normally distributed for my glm. Let's begin by creating a density plot to see the current distribution:
 
-```{r, fig.width=6, fig.height=3}
+```{r}
 #' Creates a distribution plot object with relative normal distribution
 #' 
 #' @param df A Dataframe
@@ -135,7 +141,7 @@ As was already seen in the naive model's Q-Q plot, the distribution of prices in
 
 ### Assessing Changes
 
-```{r, fig.width=6, fig.height=2.3}
+```{r}
 ## Create new "log(Price)" column for dataset and replot:
 houses.df$logPrice <- log(houses.df$Price)
 distribution_graph(houses.df, "logPrice", datatype="density")
@@ -149,14 +155,14 @@ Let's recreate the model with my change and compare with the previous model.
 
 ```{r}
 # Removing outlying logPrices, and making second model:
-q99 <- quantile(houses.df$logPrice, probs=c(0.005,0.995))
-houses.df <- houses.df %>% filter(logPrice > q99[1]) %>% filter(logPrice < q99[2])
-houses.glm2 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+q99.9 <- quantile(houses.df$logPrice, probs=c(0.0005,0.9995))
+houses.df <- houses.df %>% filter(logPrice > q99.9[1]) %>% filter(logPrice < q99.9[2])
+houses.glm2 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType+Province+Population,
                    data=houses.df)
 my_summary(houses.glm2, "Model 2")
 ```
 
-```{r, fig.width=6, fig.height=4}
+```{r}
 pred <- exp(predict(houses.glm2, houses.df))
 error(pred, houses.df$Price)
 
@@ -167,14 +173,15 @@ qqline(houses.glm2.res)
 
 ### Remarks {-}
 
-* A percent error of ~49% is already a great improvement on the previous model
+* A percent error of ~30.7% is already a great improvement on the previous model
 * The AIC score decreased drastically. However this is mostly due to the 'logPrice' variable being magnitudes smaller than the 'Price' variable, so no remarks can be made on AIC yet.
 * The Q-Q plot still has noticeable  tails curving away from the normal line
   * The right tail is much less heavy than before, an acceptable distance from the normal line
   * The left tail is about the same, with a few points straying quite further away
   * Overall the points are much straighter and close to the normal line
-* Bedrooms now is being considered to have significant positive correlation, which is more reasonable
+* Bedrooms now is being considered to not have significant negative correlation, which seems more reasonable
 * Most Property Types still are considered insignificant
+* All Provinces are now significant
 
 Overall, the model has improved in many ways and logPrice will be used in all future models.
 
@@ -187,7 +194,7 @@ Overall, the model has improved in many ways and logPrice will be used in all fu
 ### Investigating the Variable
 
 Let's check the various property types and their distributions so we can see which ones are similar enough to be grouped, or scarce enough to be removed.
-```{r, fig.width=6, fig.height=3.3}
+```{r}
 houses.df %>% group_by(PropertyType) %>% summarise(count=n())
 ggplot(data=houses.df, aes(x=logPrice, color=PropertyType)) +
   geom_boxplot() + ggtitle("Boxplot Distribution for Each Property Type")
@@ -214,7 +221,7 @@ anova_model <- aov(logPrice ~ PropertyType, data = houses.df)
 summary(anova_model)
 ```
 Clearly there is significant difference between categories, but it was good to check anyway.
-```{r, fig.width=6, fig.height=4}
+```{r}
 ## Tukey HCD test
 tukey_results <- TukeyHSD(anova_model,conf.level = 0.95)
 par(mar=c(3,8,3,3))
@@ -256,14 +263,14 @@ Let's recreate the model with my change and compare with the previous model.
 
 ```{r}
 # Making model with House and Duplex separate
-houses.glm3.1 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+houses.glm3.1 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType+Province+Population,
                      data=houses.df)
 # Making model with House and Duplex merged
 houses.df.2 <- houses.df
 houses.df.2$PropertyType <- 
   fct_collapse(houses.df.2$PropertyType, 
                `House/Duplex` = c("House","Duplex"))
-houses.glm3.2 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType,
+houses.glm3.2 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType+Province+Population,
                      data=houses.df.2)
 my_summary(houses.glm3.1, "Separate House/Duplex")
 my_summary(houses.glm3.2, "Merged House/Duplex")
@@ -271,7 +278,7 @@ my_summary(houses.glm3.2, "Merged House/Duplex")
 
 \newpage
 
-```{r, fig.width=6, fig.height=2.5}
+```{r}
 pred.1 <- exp(predict(houses.glm3.1, houses.df))
 error(pred.1, houses.df$Price)
 pred.2 <- exp(predict(houses.glm3.2, houses.df.2))
@@ -291,14 +298,16 @@ qqline(houses.glm3.2.res)
 
 * The AIC of both models is an improvement over the previous model
   * This implies that the removal and Tri/Four/Multi merging did in fact remove unnecessary variables
-  * The AIC of the separate model is lower than the merged model, implying that merging is bad
-* The Q-Q plots seem to be the exact same, and no different from the previous model's
+  * The AIC of the separate model is slightly lower than the merged model, implying that merging is bad
+* The Q-Q plots seem to be the exact same, and no difference from the previous model's
   * This means the change didn't effect the normality of the errors
-* The percent error of both models is very similar to the previous model (~49%)
-  * The separate model actually slightly improves (by about 0.03%)
-  * The merged model is slightly worse (by about 0.01%)
+* The percent error of both models is very similar to the previous model (~30.7%)
+  * The separate model slightly improves by about 0.001%)
+  * The merged model is worse (by about 0.1%)
+* The separate model assigns a p-value of 0.000008521
+  * This is well within the range of being considered "significantly different"
 
-From these observations, it is clear that the separate model is better, and will become the newest model. I will note that there still exists a insignificancy problem with the 'Tri/Four/Multi' category, but I feel there are too many existing observations to simply remove this category from the dataset.
+From these observations, it seems that only the separate model is an improvement. I will be choosing the separate model since I believe that the Duplex and House are not only found to have statistically different, but because they different enough categories in idea too. I will note that there still exists a insignificancy problem with the 'Tri/Four/Multi' category, but I feel there are too many existing observations to simply remove this category from the dataset.
 
 ```{r}
 # Choosing official 3rd model
@@ -307,9 +316,172 @@ houses.glm3 <- houses.glm3.1
 
 \newpage
 
+## Province
+
+Now I will move onto the other categorical variable in my model: Province. I will be assessing the 6 different provinces in my model and seeing if any changes will be appropriate to help the model.
+
+```{r}
+houses.df %>% group_by(Province) %>% summarise(count=n())
+ggplot(data=houses.df, aes(x=logPrice, color=Province)) +
+  geom_boxplot() + ggtitle("Boxplot Distribution for Each Property Type")
+```
+
+The boxplot distributions of Saskatchewan and Manitoba seem very similar, so I will see if it is reasonable to merge these provinces. New Brunswick also has a somewhat similar distribution. Each of the other provinces have quite unique distributions, so it is unlikely that they are not significantly different. Regardless, I will check with an ANOVA test:
+
+```{r}
+## ANOVA test
+anova_model <- aov(logPrice ~ Province, data = houses.df)
+summary(anova_model)
+```
+
+Of course it finds significant statistical difference, so I will perform a Tukey HCD test to see if any of my proposed merges would be reasonable.
+
+```{r}
+## Tukey HCD test
+tukey_results <- TukeyHSD(anova_model,conf.level = 0.95)
+par(mar=c(3,8,3,3))
+plot(tukey_results, las=1, cex.axis = 0.6)
+```
+
+Saskatchewan and Manitoba are still not determined to be significantly different, and so I will attempt to merge these. Since nothing else is even closely related, I will not reassess with another Tukey HCD test.
+
+```{r}
+# Merging categories
+houses.df$Province <- 
+  fct_collapse(houses.df$Province, 
+               `Saskatchewan/Manitoba` = c("Saskatchewan","Manitoba"))
+houses.glm4 <- glm(formula = logPrice~Bedrooms+Bathrooms+SquareFeet+PropertyType+Province+Population,
+                   data=houses.df)
+my_summary(houses.glm4, "Model 4")
+pred <- exp(predict(houses.glm4, houses.df))
+error(pred, houses.df$Price)
+par(mar=c(2,2,1,1), mfrow = c(1, 2))
+houses.glm4.res <- rstandard(houses.glm4)
+qqnorm(houses.glm4.res)
+qqline(houses.glm4.res, main="Model 4 Q-Q Plot")
+qqnorm(houses.glm3.1.res, main="Model 3 Q-Q Plot")
+qqline(houses.glm3.1.res)
+```
+
+### Remarks {-}
+
+* The AIC has reduced by about 2 
+  * This supports the idea that these provinces were not introducing different enough correlation
+* The error rate increases by about 0.00003
+* Same as the other statistics, the QQ-plot did not change in a very significant way.
+
+Though the affects of this province merging are small, I believe that a decrease of 2 in AIC is of greater importance than a minuscule increase in the error rate. Thus I will be using this new model moving forward.
+
+
+\newpage
+
 ## Numerical Explanatory Variables
 
-Let's move on to dealing with the explanatory variables with numerical values like Bathrooms, Bedrooms, and SquareFeet. Before diving into a specific variables, I'm first going to check the correlation between each of these variables and the logPrice.
+Let's move on to dealing with the explanatory variables with numerical values like Bathrooms, Bedrooms, and SquareFeet. Besides improving the model, I am hoping I will be able to make use the 'Bedrooms' variable in some significant (and positive) way. 
+
+### Finding Outliers
+
+Let's start by trimming the data for any outliers, beginning with Bedrooms:
+
+First I will remove any listings with a zero value for Bedrooms, Bathrooms, or SquareFeet. Zero bedrooms or bathrooms is hardly a living space, and zero square feet is nothing.
+
+```{r}
+houses.df <- houses.df %>%
+  filter(Bedrooms != 0) %>%
+  filter(Bathrooms != 0) %>%
+  filter(SquareFeet != 0)
+```
+
+
+```{r}
+# Removing outlying Bedrooms:
+q99.9 <- quantile(houses.df$Bedrooms, probs=c(0.0005,0.9995))
+q99.9
+table(houses.df$Bedrooms)
+# Let's view these listings:
+print(filter(houses.df, Bedrooms >= q99.9[2]), n=Inf)
+```
+
+I will manually going through these listings to see if there are any actual problems to determine if I will keep them
+
+* 1: This listing turns out to be a listing for an entire apartment complex. Since I intend to estimate individual listings, this item doesn't fit in my dataset and will be removed.
+* 2: This listing is quite odd. It is a multi-family residence packed chock-full of bedrooms and not much else. However, since I can't find anything actually incorrect about the listing, I will keep it.
+* 3: Same as item 2, just an odd multifamily listing.
+* 4: This is another listing that represents an entire apartment complex.
+* 5: Odd multifamily listing.
+* 6: Apartment complex listing.
+* 7: After finding what I believe to be this listing. I think that there was either an error in my scraping, or the online listing was changed since yesterday. The listing I found matched everything except the bedroom and bathroom counts were 8 and 5 respectively. I will change this.
+
+```{r}
+houses.df[which(houses.df$Bedrooms == 15 & houses.df$Bathrooms == 12),]$Bedrooms <- 8
+houses.df[which(houses.df$Bedrooms == 8 & houses.df$Bathrooms == 12),]$Bathrooms <- 5
+```
+
+Now I will check for more apartment complexes:
+```{r}
+houses.df %>%
+  filter(PropertyType == 'Apt/Condo') %>%
+  filter(Bedrooms >= 5)
+```
+After some investigation, it seems that those 3 outliers identified beforehand were the only apartment complex listings in the whole dataset. I will remove them now.
+```{r}
+houses.df <- houses.df %>%
+  filter(!(PropertyType=='Apt/Condo' & Bedrooms > 5))
+```
+
+
+### Bathrooms
+
+```{r}
+# Removing outlying Bathrooms:
+q99.9 <- quantile(houses.df$Bathrooms, probs=c(0.0005,0.9995))
+q99.9
+table(houses.df$Bathrooms)
+# Let's view these listings:
+print(filter(houses.df, Bathrooms >= q99.9[2]), n=Inf)
+```
+
+After checking through these listings, all of them were valid except for listing 1. Despite only scraping yesterday I couldn't find any listing that was close to this one, even on other realty websites. Unfortunately, I will have to remove this listing for this reason.
+
+```{r}
+houses.df <- houses.df %>%
+  filter(!(Bathrooms > 20))
+```
+
+### Square Feet
+
+```{r}
+# Removing outlying Square Footage:
+q99.9 <- quantile(houses.df$SquareFeet, probs=c(0.0005,0.9995))
+q99.9
+distribution_graph(houses.df, "SquareFeet", "density")
+# Let's view these listings:
+print(filter(houses.df, SquareFeet <= q99.9[1]), n=Inf)
+```
+After manual inspection each of these listings seem valid, except for listing 6. I see two very similar listings online, so I will need to check my dataset first.
+```{r}
+filter(houses.df, Price == 359900 & City == 'moncton-nb' & Bedrooms == 3)
+```
+There are two listings that are almost the exact same in my dataset, and online it is the same. However the online listings show square feet of 1500 and 1400, rather than 1500 and 247. I will simply change this listing manually in my dataset.
+```{r}
+houses.df[which(houses.df$SquareFeet == 247),]$SquareFeet <- 1400
+```
+
+```{r}
+print(filter(houses.df, SquareFeet >= q99.9[2]), n=Inf)
+```
+
+Couldn't find anything wrong with these!
+
+
+
+
+Before diving into a specific variables, I'm first going to check the correlation between each of these variables and the logPrice.
+
+```{r}
+cor(houses.df[,3:6])
+# pairs(houses.df[,c(3:6)])
+```
 
 Check pairs plot
 
@@ -323,7 +495,4 @@ Make relationship more linear by taking sqrt(SquareFeet)
 
 CHECK Plots of models: top-left is Resids v.s Fitted which determines homogeneity of variance
 perhaps there is nothing we can do, since this is likely due to large dataset with few explanatories
-
-
-INCLUDE location
 
