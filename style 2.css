@@ -82,7 +82,7 @@ header nav ul{
 header nav ul li{
     display:inline-block;
     background-color: var(--color1);
-    width: 22.8%;
+    width:31%;
     margin:1%;
 }
 /* Navigation Bar Links
@@ -129,11 +129,6 @@ header nav a:hover, header nav .menu:hover{
     float:left;
     padding:10px;
 }
-.main .image{
-    width:50%;
-    padding:0% 5%;
-}
-
 
 /* Main Articles
 - pad around by 10px
@@ -142,7 +137,7 @@ header nav a:hover, header nav .menu:hover{
 */
 .main .step{
     border-bottom:white solid 1px;
-    padding:0% 10% 10%;
+    padding:0% 5% 5%;
 }
 
 
@@ -336,7 +331,7 @@ header nav a:hover, header nav .menu:hover{
 
 
 .footer{
-    height:130px;
+    height:200px;
     background-color: var(--color2);
     text-align:center;
 }
@@ -350,14 +345,17 @@ header nav a:hover, header nav .menu:hover{
     display: flex;
     justify-content: center;
     align-items: center;
-    height:20px;
 }
-.col1,.col2{
-    width:50%;
+.col1,.col3{
+    width:30%;
+}
+.col2{
+    width:40%;
 }
 .hide{
     display:block;
 }
+
 .footer .icon{
     width:20px;
     height:20px;
@@ -365,7 +363,7 @@ header nav a:hover, header nav .menu:hover{
 }
 
 /* 
-Changes are made when the width of the page is less than 1200px 
+Changes are made when the width of the page is less than 740px 
 */
 @media all and (max-width:1200px){
     /* Navigation list items change orientation and center*/
@@ -385,15 +383,11 @@ Changes are made when the width of the page is less than 1200px
     .step .notebook-container{
         max-height:50vh;
     }
-    .main .image{
-        width:100%;
-        padding:5%;
-    }
 }
 
 
 /* 
-Changes are made when the width of the page is more than 1200px 
+Changes are made when the width of the page is more than 1000px 
 */
 @media all and (min-width:1200px){
 
@@ -407,15 +401,12 @@ Changes are made when the width of the page is more than 1200px
     .step .text{
         display:flex;
         flex-direction:column;
-        width:30%;
+        width:40%;
     }
 
     .step .notebook-container{
-        width:50%;
-        max-height:50vh;
-    }
-    .step .long{
-        max-height:100vh;
+        width:40%;
+        max-height:60vh;
     }
 }
 
