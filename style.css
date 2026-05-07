@@ -82,7 +82,7 @@ header nav ul{
 header nav ul li{
     display:inline-block;
     background-color: var(--color1);
-    width: 22.8%;
+    width: 22%;
     margin:1%;
 }
 /* Navigation Bar Links
