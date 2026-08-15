@@ -170,6 +170,11 @@ header nav a:hover, header nav .menu:hover{
     background-color: var(--jp-cell-input-bg);
     border: var(--jp-border-color1) solid 1px;
 }
+.main .conclusion{
+    padding-bottom:5%;
+    padding-left:20%;
+    padding-right:20%;
+}
 
 
 
